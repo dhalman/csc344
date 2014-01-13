@@ -96,6 +96,7 @@ int main(int argc, char **argv) {
    double duration;
    char *buffer;
    header wavHeader;
+   int ret = 0;
 
    if (checkArgs(argc, argv)) {
       printf("Could not complete operation. Bad arguments\n");
@@ -111,12 +112,17 @@ int main(int argc, char **argv) {
          buffer = malloc(wavHeader.bytes_in_data);
          fread(buffer, 1, wavHeader.bytes_in_data, infile);
 
-         //printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
-         reverseBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
-         //printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
+         if (wavHeader.channels == 2) {
+            //printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
+            reverseBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
+            //printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
 
-         fwrite(&wavHeader, 1, sizeof(header), outfile);
-         fwrite(buffer, 1, wavHeader.bytes_in_data, outfile);
+            fwrite(&wavHeader, 1, sizeof(header), outfile);
+            fwrite(buffer, 1, wavHeader.bytes_in_data, outfile);
+         } else {
+            printf("Error: currently only supports 2 channel audio\n");
+            ret = 1;
+         }
 
          fclose(infile);
          fclose(outfile);
@@ -131,5 +137,5 @@ int main(int argc, char **argv) {
       return 1; 
    }
 
-   return 0;
+   return ret;
 }
