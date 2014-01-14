@@ -57,29 +57,27 @@ void printBuffer(int16_t *samples, int size) {
    printf("\n-END-\n");
 }
 
-void reverseBuffer(int16_t *samples, int size) {
-   int16_t tempLeft, tempRight;
-   int i;
+void reverseBuffer(int16_t *samples, int size, int channels) {
+   int16_t tmp;
+   int i, j;
 
-   // 2 channel handles left and right samples serially.
-   for (i = 0; i < size / 2; i += 2) {
-      tempLeft = samples[i];
-      tempRight = samples[i + 1];
-
-      samples[i] = samples[size - i - 2]; 
-      samples[i + 1] = samples[size - i - 1]; 
-
-      samples[size - i - 2] = tempLeft;
-      samples[size - i - 1] = tempRight;
+   for (i = 0; i < size / 2; i += channels) {
+      for (j = channels; j > 0; --j) {
+         tmp = samples[i + channels - j];
+         samples[i + channels - j] = samples[size - i - j];
+         samples[size - i - j] = tmp;
+      }
    }
 }
 
 int checkArgs(int argc, char**argv) {
+   // Ensure input file is given
    if (argc != 2) {
       printf("Wrong arg count\n");
       return 1;
    }
 
+   // Ensure input file is wav
    if (!strstr(argv[1], ".wav")) {
       printf("Not a .wav file\n");
       return 1;
@@ -98,44 +96,52 @@ int main(int argc, char **argv) {
    header wavHeader;
    int ret = 0;
 
+   // Check arguments
    if (checkArgs(argc, argv)) {
       printf("Could not complete operation. Bad arguments\n");
       return 1;
    }
    
-   if ((infile = fopen(argv[1], "r"))) {
-      if ((outfile = fopen("output.wav", "w+"))) {
-         fseek(infile, 0, SEEK_SET);
-         fread(&wavHeader, 1, sizeof(header), infile);
-         //printHeader(&wavHeader);
-
-         buffer = malloc(wavHeader.bytes_in_data);
-         fread(buffer, 1, wavHeader.bytes_in_data, infile);
-
-         if (wavHeader.channels == 2) {
-            //printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
-            reverseBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
-            //printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
-
-            fwrite(&wavHeader, 1, sizeof(header), outfile);
-            fwrite(buffer, 1, wavHeader.bytes_in_data, outfile);
-         } else {
-            printf("Error: currently only supports 2 channel audio\n");
-            ret = 1;
-         }
-
-         fclose(infile);
-         fclose(outfile);
-         free(buffer);
-      } else {
-         printf("Could not open output.wav for writing.\n");
-         fclose(infile);
-         return 1;
-      }
-   } else {
+   // Check input file open
+   if (!(infile = fopen(argv[1], "r"))) {
       printf("Could not open %s for reading.\n", argv[1]);
       return 1; 
    }
+
+   // Check output file open
+   if (!(outfile = fopen("output.wav", "w+"))) {
+      printf("Could not open output.wav for writing.\n");
+      fclose(infile);
+      return 1;
+   }
+
+   // Read header
+   fseek(infile, 0, SEEK_SET);
+   fread(&wavHeader, 1, sizeof(header), infile);
+   printHeader(&wavHeader);
+
+   // Read data
+   buffer = malloc(wavHeader.bytes_in_data);
+   fread(buffer, 1, wavHeader.bytes_in_data, infile);
+
+   printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
+   
+   // Perform modification
+   // Reverse every other block
+         reverseBuffer(((int16_t *)buffer), 
+                        wavHeader.bytes_in_data / 2,
+                        wavHeader.channels);
+
+   printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
+
+   // Write output
+   fwrite(&wavHeader, 1, sizeof(header), outfile);
+   fwrite(buffer, 1, wavHeader.bytes_in_data, outfile);
+
+   // Clean house
+   fclose(infile);
+   fclose(outfile);
+   free(buffer);
 
    return ret;
 }
