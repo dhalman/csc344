@@ -82,18 +82,15 @@ void reverseBuffer(uint8_t *samples, uint32_t size, int channels, uint16_t bitDe
 
    printHex((uint8_t *)samples, size, bytes_per_sample);
 
-   for (i = 0; i <= size / 2; i += bytes_per_sample * channels) {
-      // Swap samples for each channel
-      for (j = channels; j > 0; --j) {
+   for (i = 0; i <= size / 2; i += bytes_per_sample) {
          // Swap #bytes per sample
          for (k = bytes_per_sample; k > 0; --k) {
             // Swap byte
-            tmp = samples[i + bytes_per_sample * (channels - j) + bytes_per_sample - k];
-            samples[i + bytes_per_sample * (channels - j) + bytes_per_sample - k] = 
-             samples[size - i - bytes_per_sample * j - k];
-            samples[size - i - bytes_per_sample * j - k] = tmp;
+            tmp = samples[i + bytes_per_sample - k];
+            samples[i + bytes_per_sample - k] = 
+             samples[size - i - k];
+            samples[size - i - k] = tmp;
          }
-      }
    }
 
    printHex((uint8_t *)samples, size, bytes_per_sample);
