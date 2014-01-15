@@ -45,6 +45,23 @@ void printHeader(header *h) {
    printf("\ndata bytes: %d\n", h->bytes_in_data);
 }
 
+void printHex(uint8_t *buffer, int size, int perLine) {
+   int i;
+
+   printf("\n\nHex Dump:\n");
+
+   for (i = 0; i < size; ++i) {
+      if (i % perLine) {
+         printf(" ");
+      } else {
+         printf("\n");
+      }
+      printf("%X", buffer[i]);
+   }
+
+   printf("\n\nHex END:\n");
+}
+
 void printBuffer(int16_t *samples, int size) {
    int i;
 
@@ -57,10 +74,31 @@ void printBuffer(int16_t *samples, int size) {
    printf("\n-END-\n");
 }
 
-void reverseBuffer(int16_t *samples, int size, int channels) {
-   int16_t tmp;
-   int i, j;
+void reverseBuffer(uint8_t *samples, uint32_t size, int channels, uint16_t bitDepth) {
+   uint8_t tmp;
+   int i, j, k;
+   uint8_t bytes_per_sample = bitDepth / 8;
+   uint32_t numSamples = size / bytes_per_sample;;
 
+   printHex((uint8_t *)samples, size, bytes_per_sample);
+
+   for (i = 0; i <= size / 2; i += bytes_per_sample * channels) {
+      // Swap samples for each channel
+      for (j = channels; j > 0; --j) {
+         // Swap #bytes per sample
+         for (k = bytes_per_sample; k > 0; --k) {
+            // Swap byte
+            tmp = samples[i + bytes_per_sample * (channels - j) + bytes_per_sample - k];
+            samples[i + bytes_per_sample * (channels - j) + bytes_per_sample - k] = 
+             samples[size - i - bytes_per_sample * j - k];
+            samples[size - i - bytes_per_sample * j - k] = tmp;
+         }
+      }
+   }
+
+   printHex((uint8_t *)samples, size, bytes_per_sample);
+
+   /*
    for (i = 0; i < size / 2; i += channels) {
       for (j = channels; j > 0; --j) {
          tmp = samples[i + channels - j];
@@ -68,6 +106,7 @@ void reverseBuffer(int16_t *samples, int size, int channels) {
          samples[size - i - j] = tmp;
       }
    }
+   */
 }
 
 int checkArgs(int argc, char**argv) {
@@ -95,6 +134,7 @@ int main(int argc, char **argv) {
    char *buffer;
    header wavHeader;
    int ret = 0;
+   int payloadSize = 0;
 
    // Check arguments
    if (checkArgs(argc, argv)) {
@@ -121,22 +161,29 @@ int main(int argc, char **argv) {
    printHeader(&wavHeader);
 
    // Read data
-   buffer = malloc(wavHeader.bytes_in_data);
-   fread(buffer, 1, wavHeader.bytes_in_data, infile);
+   buffer = malloc(wavHeader.totallength - sizeof(header));
+   payloadSize = fread(buffer, 1, wavHeader.totallength - sizeof(header), infile);
 
-   printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
-   
-   // Perform modification
-   // Reverse every other block
-         reverseBuffer(((int16_t *)buffer), 
-                        wavHeader.bytes_in_data / 2,
-                        wavHeader.channels);
+   if (payloadSize != wavHeader.totallength - sizeof(header)) {
+      printf("payload does not match header\n");
+   }
 
-   printBuffer((int16_t *)buffer, wavHeader.bytes_in_data / 2);
+  // printBuffer((int16_t *)buffer, wavHeader.bytes_in_data);
+   printHex((uint8_t *)&wavHeader, sizeof(header), 1);
 
-   // Write output
+   // Write header
    fwrite(&wavHeader, 1, sizeof(header), outfile);
-   fwrite(buffer, 1, wavHeader.bytes_in_data, outfile);
+
+   // Perform modification
+   reverseBuffer((uint8_t *)buffer, 
+                  wavHeader.bytes_in_data,
+                  wavHeader.channels,
+                  wavHeader.bits_per_sample);
+
+  // printBuffer((int16_t *)buffer, wavHeader.bytes_in_data);
+
+   // Mirror sound: concatenate reverse sound to original
+   fwrite(buffer, 1, payloadSize, outfile);
 
    // Clean house
    fclose(infile);
