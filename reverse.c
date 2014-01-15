@@ -78,22 +78,20 @@ void reverseBuffer(uint8_t *samples, uint32_t size, int channels, uint16_t bitDe
    uint8_t tmp;
    int i, j, k;
    uint8_t bytes_per_sample = bitDepth / 8;
-   uint32_t numSamples = size / bytes_per_sample;;
 
-   printHex((uint8_t *)samples, size, bytes_per_sample);
+   //printHex((uint8_t *)samples, size, bytes_per_sample);
 
    for (i = 0; i <= size / 2; i += bytes_per_sample) {
-         // Swap #bytes per sample
-         for (k = bytes_per_sample; k > 0; --k) {
-            // Swap byte
-            tmp = samples[i + bytes_per_sample - k];
-            samples[i + bytes_per_sample - k] = 
-             samples[size - i - k];
-            samples[size - i - k] = tmp;
-         }
+      // Swap #bytes per sample
+      for (k = bytes_per_sample; k > 0; --k) {
+         // Swap byte
+         tmp = samples[i + bytes_per_sample - k];
+         samples[i + bytes_per_sample - k] = samples[size - i - k];
+         samples[size - i - k] = tmp;
+      }
    }
 
-   printHex((uint8_t *)samples, size, bytes_per_sample);
+   //printHex((uint8_t *)samples, size, bytes_per_sample);
 
    /*
    for (i = 0; i < size / 2; i += channels) {
@@ -155,7 +153,7 @@ int main(int argc, char **argv) {
    // Read header
    fseek(infile, 0, SEEK_SET);
    fread(&wavHeader, 1, sizeof(header), infile);
-   printHeader(&wavHeader);
+   //printHeader(&wavHeader);
 
    // Read data
    buffer = malloc(wavHeader.totallength - sizeof(header));
