@@ -74,6 +74,8 @@ void printBuffer(int16_t *samples, int size) {
    printf("\n-END-\n");
 }
 
+// Reverses the second half of the buffer and replaces the first half with it:
+// Essentially plays the second half backwards, then forwards
 void reverseBuffer(uint8_t *samples, uint32_t size, int channels, uint16_t bitDepth) {
    uint8_t tmp;
    int i, j, k;
@@ -81,13 +83,22 @@ void reverseBuffer(uint8_t *samples, uint32_t size, int channels, uint16_t bitDe
 
    //printHex((uint8_t *)samples, size, bytes_per_sample);
 
-   for (i = 0; i <= size / 2; i += bytes_per_sample) {
+   for (i = 0; i < size / 2; i += bytes_per_sample) {
       // Swap #bytes per sample
       for (k = bytes_per_sample; k > 0; --k) {
          // Swap byte
          tmp = samples[i + bytes_per_sample - k];
          samples[i + bytes_per_sample - k] = samples[size - i - k];
-         samples[size - i - k] = tmp;
+         samples[size / 2 - i - k] = tmp;
+      }
+   }
+
+   // Correct stereo polarity
+   if (channels == 2) {
+      for (j = 1; j + 1 < size; j += 2) {
+         tmp = samples[i];
+         samples[i] = samples [i - 1];
+         samples[i - 1] = tmp;
       }
    }
 
@@ -164,7 +175,7 @@ int main(int argc, char **argv) {
    }
 
   // printBuffer((int16_t *)buffer, wavHeader.bytes_in_data);
-   printHex((uint8_t *)&wavHeader, sizeof(header), 1);
+  // printHex((uint8_t *)&wavHeader, sizeof(header), 1);
 
    // Write header
    fwrite(&wavHeader, 1, sizeof(header), outfile);
