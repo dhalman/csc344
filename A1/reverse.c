@@ -1,3 +1,11 @@
+/*
+  Derek Halman
+  CSC344
+  reverse.c
+  
+  Modifies a wav file and reverses part of it.
+  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
