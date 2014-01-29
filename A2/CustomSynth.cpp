@@ -75,8 +75,6 @@ public:
         } else {
             init = true;
         }
-        
-        // std::cout << "Sample Rate: " << sampleRate << " attackDelta: " << attackDelta << std::endl;
     }
     
     // Must be called before initEnvelope()
@@ -170,7 +168,6 @@ class SineWaveVoice  : public SynthesiserVoice
 public:
     SineWaveVoice()
         : angleDelta (0.0),
-          tailOff (0.0),
           angleDelta1 (0.0),
           angleDelta2 (0.0),
           lfoDelta (0)
@@ -206,11 +203,7 @@ public:
     {
         currentAngle = currentAngle1 = currentAngle2 = lfoAngle = 0.0;
         level = .7;
-        tailOff = 0.0;
         midiNumber = midiNoteNumber;
-        
-        aLevel = MAX_LEVEL;
-        sLevel = MAX_LEVEL;
         
         // env is output envelope
         env->setOutput(0);
@@ -222,8 +215,6 @@ public:
         env1->setOutput(1);
         env1->release();
         
-        //currentAngle2 = 90;
-
         // Pure sine-wave bass note (midi# between 36 and 48) matches fundamental
         double cyclesPerSecond = MidiMessage::getMidiNoteInHertz(36 + midiNoteNumber % 24);
         double cyclesPerSample = cyclesPerSecond / getSampleRate();
@@ -242,17 +233,6 @@ public:
         lfoPerSecond = 8;
         double lfoPerSample = lfoPerSecond / getSampleRate();
         lfoDelta = lfoPerSample * 2.0 * double_Pi;
-        
-        // Debug
-        std::cout << "Notes: " <<
-         48 + midiNoteNumber % 12 << " " <<
-         midiNoteNumber << " " <<
-         midiNoteNumber + 6;
-        std::cout << " Frequency: " <<
-         cyclesPerSecond << " " <<
-         cyclesPerSecond1 << " " <<
-         cyclesPerSecond2 << std::endl;
-        std::cout << "LFO: " << lfoPerSecond << " Delta: " << lfoDelta << std::endl;
     }
 
     void stopNote (bool allowTailOff) {
@@ -266,47 +246,47 @@ public:
 
     void controllerMoved (int /*controllerNumber*/, int /*newValue*/)
     {
-        // Not implemented. Vinyl RULES.
+        // Not implemented. Vinyl RULES!
     }
 
     void renderNextBlock (AudioSampleBuffer& outputBuffer, int startSample, int numSamples)
     {
         if (angleDelta != 0.0)
         {
-                while (--numSamples >= 0)
-                {
-                   // Sum 3 oscillator outputs
-                    const float currentSample =
-                     (float) (sin (currentAngle) +
-                              sin (currentAngle1) * env1->getOutput() +
-                              sin (currentAngle2) * (1 - env1->getOutput())
-                              ) * env->getOutput();
+             while (--numSamples >= 0)
+             {
+                // Sum 3 oscillator outputs
+                 const float currentSample =
+                  (float) (sin (currentAngle) +
+                           sin (currentAngle1) * env1->getOutput() +
+                           sin (currentAngle2) * (1 - env1->getOutput())
+                           ) * env->getOutput();
 
-                    for (int i = outputBuffer.getNumChannels(); --i >= 0;)
-                        *outputBuffer.getSampleData(i, startSample) += currentSample;
+                 for (int i = outputBuffer.getNumChannels(); --i >= 0;)
+                     *outputBuffer.getSampleData(i, startSample) += currentSample;
 
-                    // Increment oscillators
-                    lfoAngle += lfoDelta;
+                 // Increment oscillators
+                 lfoAngle += lfoDelta;
 
-                    currentAngle += angleDelta +
-                                    (1 + sin(lfoAngle)) * .005 * env1->getOutput();
-                    
-                    currentAngle1 += angleDelta1 * env1->getOutput();
-                    
-                    currentAngle2 += angleDelta2 * env1->getOutput() / 2;
+                 currentAngle += angleDelta +
+                                 (1 + sin(lfoAngle)) * .005 * env1->getOutput();
+                 
+                 currentAngle1 += angleDelta1 * env1->getOutput();
+                 
+                 currentAngle2 += angleDelta2 * env1->getOutput() / 2;
 
-                    if (currentAngle2 >= level / 4) {
-                        currentAngle2 = level / 4 * -1;
-                    }
+                 if (currentAngle2 >= level / 4) {
+                     currentAngle2 = level / 4 * -1;
+                 }
 
-                    // Push the envelope
-                    env->stepEnvelope();
-                    env1->stepEnvelope();
+                 // Push the envelope
+                 env->stepEnvelope();
+                 env1->stepEnvelope();
 
-                    // And mess with the lfo
-                    modifyLfo((1 - env1->getOutput()) * lfoPerSecond, &lfoDelta);
-                    ++startSample;
-                }
+                 // And mess with the lfo
+                 modifyLfo((1 - env1->getOutput()) * lfoPerSecond, &lfoDelta);
+                 ++startSample;
+             }
             
         }
         
@@ -318,12 +298,10 @@ public:
     }
 
 private:
-    double currentAngle, angleDelta, level, tailOff;
+    double currentAngle, angleDelta, level;
     double currentAngle1, angleDelta1;
     double currentAngle2, angleDelta2;
     double lfoPerSecond, lfoAngle, lfoDelta;
-    double envLevel, aLevel, aTime, dTime, sLevel, rTime;
-    int envState;
     int midiNumber;
 };
 
