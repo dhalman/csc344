@@ -20,6 +20,7 @@
  */
 class A3AudioProcessorEditor  : public AudioProcessorEditor,
 public SliderListener,
+public ButtonListener,
 public Timer
 {
 public:
@@ -31,11 +32,13 @@ public:
     void paint (Graphics&) override;
     void resized() override;
     void sliderValueChanged (Slider*) override;
+    void buttonClicked(Button*);
     
 private:
     MidiKeyboardComponent midiKeyboard;
     Label infoLabel, gainLabel, frequencyLabel, resonanceLabel;
     Slider gainSlider, frequencySlider, resonanceSlider;
+    ToggleButton offSwitch;
     ScopedPointer<ResizableCornerComponent> resizer;
     ComponentBoundsConstrainer resizeLimits;
     

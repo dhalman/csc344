@@ -17,6 +17,7 @@
 const float defaultResonance = .5f;
 const float defaultfrequency = 20000;
 const float defaultGain = .5f;
+const bool  defaultSwitchState = true;
 
 double cutoff = .1;
 
@@ -54,6 +55,7 @@ A3AudioProcessor::A3AudioProcessor()
 
     setParameter(freqParam, defaultfrequency);
     setParameter(resoParam, defaultResonance);
+    setParameter(switchParam, defaultSwitchState);
     calcPoles();
     calcCoefs();    
 }
@@ -123,6 +125,7 @@ float A3AudioProcessor::getParameter (int index)
         case gainParam:     return 0;
         case freqParam:     return 0;
         case resoParam:     return 0;
+        case switchParam:   return 0;
         default:            return 0.0f;
     }
 }
@@ -147,6 +150,8 @@ void A3AudioProcessor::setParameter (int index, float newValue)
             cutoff = (newValue / ((getSampleRate() ?: 44100) / 2.0)) * double_Pi;
             calcCoefs();
             break;
+        case switchParam:
+            switchState = (bool) newValue;
         default:
             break;
     }
@@ -159,6 +164,7 @@ float A3AudioProcessor::getParameterDefaultValue (int index)
         case gainParam:     return defaultGain;
         case freqParam:     return defaultfrequency;
         case resoParam:     return defaultResonance;
+        case switchParam:   return defaultSwitchState;
         default:            break;
     }
     
@@ -172,6 +178,7 @@ const String A3AudioProcessor::getParameterName (int index)
         case gainParam:     return "gain";
         case freqParam:     return "frequency";
         case resoParam:     return "resonance";
+        case switchParam:   return "switch";
         default:            break;
     }
     
@@ -224,10 +231,10 @@ void A3AudioProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiM
         float* channelData = buffer.getSampleData(channel);
 
         for (int i = 0; i < numSamples; ++i) {
-            in = channelData[i] *= gainFactor * gain;
+          if (switchState) {
+            in = channelData[i] *= gainFactor * gain * .1;
            
             //channelData[i] = (i%30) * (1/30.0);
-            in = channelData[i];
             //std::cout<<"Input["<<i<<"]: "<<in<<" ("<<(i%30)*(1/30.0)<<")"<<std::endl;;
 
             bufferIndex = i % NUM_POLES;
@@ -250,6 +257,9 @@ void A3AudioProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiM
             lastSamples[offset] = in;
             lastOutputs[offset] = channelData[i];
             //std::cout<<" Output["<<i<<"]: "<<channelData[i]<<std::endl;
+          } else {
+              channelData[i] *= gain;
+          }
         }
     }
 

@@ -21,7 +21,8 @@ frequencyLabel ("", "Frequency:"),
 resonanceLabel ("", "Depth:"),
 gainSlider ("gain"),
 frequencySlider ("frequency"),
-resonanceSlider ("resonance")
+resonanceSlider ("resonance"),
+offSwitch ("On/Off")
 {
     // add some sliders..
     addAndMakeVisible (gainSlider);
@@ -38,6 +39,12 @@ resonanceSlider ("resonance")
     resonanceSlider.setSliderStyle (Slider::Rotary);
     resonanceSlider.addListener (this);
     resonanceSlider.setRange (.01, .9, .01);
+    
+    addAndMakeVisible(offSwitch);
+    offSwitch.addListener(this);
+    offSwitch.setEnabled(true);
+    offSwitch.setToggleState(true, dontSendNotification);
+    
     
     // add some labels for the sliders..
     gainLabel.attachToComponent (&gainSlider, false);
@@ -83,6 +90,7 @@ void A3AudioProcessorEditor::resized()
     gainSlider.setBounds (20, 60, 150, 40);
     frequencySlider.setBounds (200, 60, 150, 40);
     resonanceSlider.setBounds (20, 140, 150, 40);
+    offSwitch.setBounds(200, 140, 150, 40);
     
     const int keyboardHeight = 70;
     midiKeyboard.setBounds (4, getHeight() - keyboardHeight - 4, getWidth() - 8, keyboardHeight);
@@ -107,6 +115,7 @@ void A3AudioProcessorEditor::timerCallback()
     gainSlider.setValue (ourProcessor->gain, dontSendNotification);
     frequencySlider.setValue (ourProcessor->frequency, dontSendNotification);
     resonanceSlider.setValue (ourProcessor->resonance, dontSendNotification);
+    offSwitch.setToggleState(ourProcessor->switchState, dontSendNotification);
 }
 
 // This is our Slider::Listener callback, when the user drags a slider.
@@ -126,6 +135,11 @@ void A3AudioProcessorEditor::sliderValueChanged (Slider* slider)
         getProcessor()->setParameterNotifyingHost (A3AudioProcessor::resoParam,
                                                    (float) resonanceSlider.getValue());
     }
+}
+
+void A3AudioProcessorEditor::buttonClicked (Button* buttonThatWasClicked) {
+    getProcessor()->setParameterNotifyingHost (A3AudioProcessor::switchParam,
+                                                offSwitch.getToggleState());
 }
 
 //==============================================================================

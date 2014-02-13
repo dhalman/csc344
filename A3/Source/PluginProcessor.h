@@ -95,11 +95,13 @@ public:
         gainParam = 0,
         freqParam,
         resoParam,
+        switchParam,
         
         totalNumParams
     };
     
     double gain, frequency, resonance;
+    bool switchState;
     
 private:
     //==============================================================================
