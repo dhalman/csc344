@@ -14,7 +14,7 @@
 
 #define NUM_POLES 4
 
-const float defaultDelay = 100;
+const float defaultfrequency = 100;
 const float defaultGain = .5f;
 double cutoff;
 
@@ -42,7 +42,7 @@ A3AudioProcessor::A3AudioProcessor()
 {
     // Set up some default values..
     gain = defaultGain;
-    delay = defaultDelay;
+    frequency = defaultfrequency;
     
     lastUIWidth = 400;
     lastUIHeight = 200;
@@ -55,7 +55,7 @@ A3AudioProcessor::A3AudioProcessor()
         sPoles[i] = imag * cos((1.0 / 4.0) * acos((imag/0.5)) + (((i) * double_Pi) / 4));
     }
     
-    setParameter(delayParam, defaultDelay);
+    setParameter(freqParam, defaultfrequency);
     calcCoefs();
     
     std::cout<<"SampleRate: " << getSampleRate() << std::endl;
@@ -68,7 +68,7 @@ A3AudioProcessor::~A3AudioProcessor()
 
 //==============================================================================
 void A3AudioProcessor::printPoles(std::complex<double> *poles) {
-    std::cout<<"\nCutoff: "<<cutoff<<" Radians, "<<delay<<" Hz"<<std::endl;
+    std::cout<<"\nCutoff: "<<cutoff<<" Radians, "<<frequency<<" Hz"<<std::endl;
     std::cout<<"SampleRate: "<<getSampleRate()<<std::endl;
     std::cout<<"GainFactor: "<<gainFactor<<std::endl;
     std::cout<<"Poles:"<<std::endl;
@@ -117,7 +117,7 @@ float A3AudioProcessor::getParameter (int index)
     switch (index)
     {
         case gainParam:     return 0;
-        case delayParam:    return 0;
+        case freqParam:     return 0;
         default:            return 0.0f;
     }
 }
@@ -132,8 +132,8 @@ void A3AudioProcessor::setParameter (int index, float newValue)
         case gainParam:
             gain = newValue;
             break;
-        case delayParam:
-            delay = newValue;
+        case freqParam:
+            frequency = newValue;
             cutoff = (newValue / ((getSampleRate() ?: 44100) / 2.0)) * double_Pi;
             calcCoefs();
             break;
@@ -147,7 +147,7 @@ float A3AudioProcessor::getParameterDefaultValue (int index)
     switch (index)
     {
         case gainParam:     return defaultGain;
-        case delayParam:    return defaultDelay;
+        case freqParam:    return defaultfrequency;
         default:            break;
     }
     
@@ -159,7 +159,7 @@ const String A3AudioProcessor::getParameterName (int index)
     switch (index)
     {
         case gainParam:     return "gain";
-        case delayParam:    return "delay";
+        case freqParam:     return "frequency";
         default:            break;
     }
     
@@ -189,7 +189,7 @@ void A3AudioProcessor::releaseResources()
 }
 
 void A3AudioProcessor::reset() {
-    // Use this method as the place to clear any delay lines, buffers, etc, as it
+    // Use this method as the place to clear any frequency lines, buffers, etc, as it
     // means there's been a break in the audio's continuity.
     delayBuffer.clear();
 }
@@ -269,7 +269,7 @@ void A3AudioProcessor::getStateInformation (MemoryBlock& destData)
     xml.setAttribute ("uiWidth", lastUIWidth);
     xml.setAttribute ("uiHeight", lastUIHeight);
     xml.setAttribute ("gain", gain);
-    xml.setAttribute ("delay", delay);
+    xml.setAttribute ("frequency", frequency);
     
     // then use this helper function to stuff it into the binary blob and return it..
     copyXmlToBinary (xml, destData);
@@ -293,7 +293,7 @@ void A3AudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             lastUIHeight = xmlState->getIntAttribute ("uiHeight", lastUIHeight);
             
             gain  = (float) xmlState->getDoubleAttribute ("gain", gain);
-            delay = (float) xmlState->getDoubleAttribute ("delay", delay);
+            frequency = (float) xmlState->getDoubleAttribute ("frequency", frequency);
         }
     }
 }

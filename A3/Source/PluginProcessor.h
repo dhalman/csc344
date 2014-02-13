@@ -92,12 +92,12 @@ public:
     enum Parameters
     {
         gainParam = 0,
-        delayParam,
+        freqParam,
         
         totalNumParams
     };
     
-    float gain, delay;
+    float gain, frequency;
     
 private:
     //==============================================================================

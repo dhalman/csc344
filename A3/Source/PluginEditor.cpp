@@ -17,27 +17,27 @@ A3AudioProcessorEditor::A3AudioProcessorEditor (A3AudioProcessor* ownerFilter)
 midiKeyboard (ownerFilter->keyboardState, MidiKeyboardComponent::horizontalKeyboard),
 infoLabel (String::empty),
 gainLabel ("", "Throughput level:"),
-delayLabel ("", "Delay:"),
+frequencyLabel ("", "Frequency:"),
 gainSlider ("gain"),
-delaySlider ("delay")
+frequencySlider ("frequency")
 {
     // add some sliders..
     addAndMakeVisible (gainSlider);
     gainSlider.setSliderStyle (Slider::Rotary);
     gainSlider.addListener (this);
-    gainSlider.setRange (0.0, 10.0, 0.1);
+    gainSlider.setRange (0.0, 2.0, 0.01);
     
-    addAndMakeVisible (delaySlider);
-    delaySlider.setSliderStyle (Slider::Rotary);
-    delaySlider.addListener (this);
-    delaySlider.setRange (100, 20000, 1);
+    addAndMakeVisible (frequencySlider);
+    frequencySlider.setSliderStyle (Slider::Rotary);
+    frequencySlider.addListener (this);
+    frequencySlider.setRange (100, 20000, 10);
     
     // add some labels for the sliders..
     gainLabel.attachToComponent (&gainSlider, false);
     gainLabel.setFont (Font (11.0f));
     
-    delayLabel.attachToComponent (&delaySlider, false);
-    delayLabel.setFont (Font (11.0f));
+    frequencyLabel.attachToComponent (&frequencySlider, false);
+    frequencyLabel.setFont (Font (11.0f));
     
     // add the midi keyboard component..
     addAndMakeVisible (midiKeyboard);
@@ -73,7 +73,7 @@ void A3AudioProcessorEditor::resized()
 {
     infoLabel.setBounds (10, 4, 400, 25);
     gainSlider.setBounds (20, 60, 150, 40);
-    delaySlider.setBounds (200, 60, 150, 40);
+    frequencySlider.setBounds (200, 60, 150, 40);
     
     const int keyboardHeight = 70;
     midiKeyboard.setBounds (4, getHeight() - keyboardHeight - 4, getWidth() - 8, keyboardHeight);
@@ -96,7 +96,7 @@ void A3AudioProcessorEditor::timerCallback()
         displayPositionInfo (newPos);
     
     gainSlider.setValue (ourProcessor->gain, dontSendNotification);
-    delaySlider.setValue (ourProcessor->delay, dontSendNotification);
+    frequencySlider.setValue (ourProcessor->frequency, dontSendNotification);
 }
 
 // This is our Slider::Listener callback, when the user drags a slider.
@@ -110,10 +110,10 @@ void A3AudioProcessorEditor::sliderValueChanged (Slider* slider)
         getProcessor()->setParameterNotifyingHost (A3AudioProcessor::gainParam,
                                                    (float) gainSlider.getValue());
     }
-    else if (slider == &delaySlider)
+    else if (slider == &frequencySlider)
     {
-        getProcessor()->setParameterNotifyingHost (A3AudioProcessor::delayParam,
-                                                   (float) delaySlider.getValue());
+        getProcessor()->setParameterNotifyingHost (A3AudioProcessor::freqParam,
+                                                   (float) frequencySlider.getValue());
     }
 }
 
