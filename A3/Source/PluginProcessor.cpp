@@ -14,9 +14,11 @@
 
 #define NUM_POLES 4
 
-const float defaultfrequency = 100;
+const float defaultResonance = .5f;
+const float defaultfrequency = 20000;
 const float defaultGain = .5f;
-double cutoff;
+
+double cutoff = .1;
 
 // Input buffer
 double lastSamples[2 * NUM_POLES] = {0,0,0,0,0,0,0,0};
@@ -28,9 +30,8 @@ std::complex<double> sPoles[NUM_POLES];
 std::complex<double> zPoles[NUM_POLES];
 std::complex<double> coefs[NUM_POLES];
 
-int pyth[NUM_POLES] = {4, 6, 4, 1};
+int pyths[NUM_POLES] = {4, 6, 4, 1};
 
-double resonance = .5;
 double gainFactor;
 
 
@@ -43,6 +44,7 @@ A3AudioProcessor::A3AudioProcessor()
     // Set up some default values..
     gain = defaultGain;
     frequency = defaultfrequency;
+    resonance = defaultResonance;
     
     lastUIWidth = 400;
     lastUIHeight = 200;
@@ -50,16 +52,10 @@ A3AudioProcessor::A3AudioProcessor()
     lastPosInfo.resetToDefault();
     delayPosition = 0;
 
-    for (int i = 0; i < NUM_POLES; ++i) {
-        //sPoles[i] = imag * cos(acos(imag / resonance) / (double)NUM_POLES + (i + 1) * 2 * 3.14 / NUM_POLES);
-        sPoles[i] = imag * cos((1.0 / 4.0) * acos((imag/0.5)) + (((i) * double_Pi) / 4));
-    }
-    
     setParameter(freqParam, defaultfrequency);
-    calcCoefs();
-    
-    std::cout<<"SampleRate: " << getSampleRate() << std::endl;
-    printPoles(coefs);
+    setParameter(resoParam, defaultResonance);
+    calcPoles();
+    calcCoefs();    
 }
 
 A3AudioProcessor::~A3AudioProcessor()
@@ -67,6 +63,14 @@ A3AudioProcessor::~A3AudioProcessor()
 }
 
 //==============================================================================
+
+void A3AudioProcessor::calcPoles() {
+    for (int i = 0; i < NUM_POLES; ++i) {
+        sPoles[i] = imag *
+        cos((1.0 / NUM_POLES) * acos((imag/resonance)) + (((i) * double_Pi) / NUM_POLES));
+    }
+}
+
 void A3AudioProcessor::printPoles(std::complex<double> *poles) {
     std::cout<<"\nCutoff: "<<cutoff<<" Radians, "<<frequency<<" Hz"<<std::endl;
     std::cout<<"SampleRate: "<<getSampleRate()<<std::endl;
@@ -118,6 +122,7 @@ float A3AudioProcessor::getParameter (int index)
     {
         case gainParam:     return 0;
         case freqParam:     return 0;
+        case resoParam:     return 0;
         default:            return 0.0f;
     }
 }
@@ -131,6 +136,11 @@ void A3AudioProcessor::setParameter (int index, float newValue)
     {
         case gainParam:
             gain = newValue;
+            break;
+        case resoParam:
+            resonance = newValue;
+            calcPoles();
+            calcCoefs();
             break;
         case freqParam:
             frequency = newValue;
@@ -147,7 +157,8 @@ float A3AudioProcessor::getParameterDefaultValue (int index)
     switch (index)
     {
         case gainParam:     return defaultGain;
-        case freqParam:    return defaultfrequency;
+        case freqParam:     return defaultfrequency;
+        case resoParam:     return defaultResonance;
         default:            break;
     }
     
@@ -160,6 +171,7 @@ const String A3AudioProcessor::getParameterName (int index)
     {
         case gainParam:     return "gain";
         case freqParam:     return "frequency";
+        case resoParam:     return "resonance";
         default:            break;
     }
     
@@ -203,7 +215,7 @@ int A3AudioProcessor::getDelayIndex(int bufferIndex, int delayValue) {
 }
 
 void A3AudioProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiMessages) {
-    int channel, bufferIndex;
+    int channel, bufferIndex, offset;
     const int numSamples = buffer.getNumSamples();
     double in;
     
@@ -212,10 +224,10 @@ void A3AudioProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiM
         float* channelData = buffer.getSampleData(channel);
 
         for (int i = 0; i < numSamples; ++i) {
-            channelData[i] *= gainFactor * gain;
+            in = channelData[i] *= gainFactor * gain;
            
             //channelData[i] = (i%30) * (1/30.0);
-            //in = channelData[i];
+            in = channelData[i];
             //std::cout<<"Input["<<i<<"]: "<<in<<" ("<<(i%30)*(1/30.0)<<")"<<std::endl;;
 
             bufferIndex = i % NUM_POLES;
@@ -223,10 +235,9 @@ void A3AudioProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiM
 
             
             for (int j = 0; j < NUM_POLES; ++j) {
-                channelData[i] -=
-                // lastSamples[offset + getDelayIndex(bufferIndex, j+1)] -
-                
-                lastOutputs[channel + getNumInputChannels() * getDelayIndex(bufferIndex, j+1)] * coefs[j].real();
+                offset = channel + getNumInputChannels() * getDelayIndex(bufferIndex, j+1);
+                channelData[i] += lastSamples[offset] * pyths[j] -
+                                  lastOutputs[offset] * coefs[j].real();
                
                 //    std::cout<<" -= lastOutputs["<<getDelayIndex(bufferIndex, j+1)<<"] * coefs["<<j<<"] (";
                 //std::cout<<lastOutputs[offset + getDelayIndex(bufferIndex, j+1)]<<" * ";
@@ -236,8 +247,8 @@ void A3AudioProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& midiM
 
             //channelData[i] *= gainFactor * gain;
             //std::cout<<" *= GainFactor: "<<gainFactor<<std::endl;
-            //lastSamples[offset + bufferIndex] = in;
-            lastOutputs[channel + getNumInputChannels() * bufferIndex] = channelData[i];
+            lastSamples[offset] = in;
+            lastOutputs[offset] = channelData[i];
             //std::cout<<" Output["<<i<<"]: "<<channelData[i]<<std::endl;
         }
     }

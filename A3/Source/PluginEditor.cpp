@@ -18,8 +18,10 @@ midiKeyboard (ownerFilter->keyboardState, MidiKeyboardComponent::horizontalKeybo
 infoLabel (String::empty),
 gainLabel ("", "Throughput level:"),
 frequencyLabel ("", "Frequency:"),
+resonanceLabel ("", "Depth:"),
 gainSlider ("gain"),
-frequencySlider ("frequency")
+frequencySlider ("frequency"),
+resonanceSlider ("resonance")
 {
     // add some sliders..
     addAndMakeVisible (gainSlider);
@@ -32,6 +34,11 @@ frequencySlider ("frequency")
     frequencySlider.addListener (this);
     frequencySlider.setRange (100, 20000, 10);
     
+    addAndMakeVisible (resonanceSlider);
+    resonanceSlider.setSliderStyle (Slider::Rotary);
+    resonanceSlider.addListener (this);
+    resonanceSlider.setRange (.01, .9, .01);
+    
     // add some labels for the sliders..
     gainLabel.attachToComponent (&gainSlider, false);
     gainLabel.setFont (Font (11.0f));
@@ -39,8 +46,9 @@ frequencySlider ("frequency")
     frequencyLabel.attachToComponent (&frequencySlider, false);
     frequencyLabel.setFont (Font (11.0f));
     
-    // add the midi keyboard component..
-    addAndMakeVisible (midiKeyboard);
+    resonanceLabel.attachToComponent (&resonanceSlider, false);
+    resonanceLabel.setFont (Font (11.0f));
+    
     
     // add a label that will display the current timecode and status..
     addAndMakeVisible (infoLabel);
@@ -74,6 +82,7 @@ void A3AudioProcessorEditor::resized()
     infoLabel.setBounds (10, 4, 400, 25);
     gainSlider.setBounds (20, 60, 150, 40);
     frequencySlider.setBounds (200, 60, 150, 40);
+    resonanceSlider.setBounds (20, 140, 150, 40);
     
     const int keyboardHeight = 70;
     midiKeyboard.setBounds (4, getHeight() - keyboardHeight - 4, getWidth() - 8, keyboardHeight);
@@ -97,6 +106,7 @@ void A3AudioProcessorEditor::timerCallback()
     
     gainSlider.setValue (ourProcessor->gain, dontSendNotification);
     frequencySlider.setValue (ourProcessor->frequency, dontSendNotification);
+    resonanceSlider.setValue (ourProcessor->resonance, dontSendNotification);
 }
 
 // This is our Slider::Listener callback, when the user drags a slider.
@@ -109,11 +119,12 @@ void A3AudioProcessorEditor::sliderValueChanged (Slider* slider)
         // that they've changed.
         getProcessor()->setParameterNotifyingHost (A3AudioProcessor::gainParam,
                                                    (float) gainSlider.getValue());
-    }
-    else if (slider == &frequencySlider)
-    {
+    } else if (slider == &frequencySlider) {
         getProcessor()->setParameterNotifyingHost (A3AudioProcessor::freqParam,
                                                    (float) frequencySlider.getValue());
+    } else if (slider == &resonanceSlider) {
+        getProcessor()->setParameterNotifyingHost (A3AudioProcessor::resoParam,
+                                                   (float) resonanceSlider.getValue());
     }
 }
 

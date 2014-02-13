@@ -34,8 +34,8 @@ public:
     
 private:
     MidiKeyboardComponent midiKeyboard;
-    Label infoLabel, gainLabel, frequencyLabel;
-    Slider gainSlider, frequencySlider;
+    Label infoLabel, gainLabel, frequencyLabel, resonanceLabel;
+    Slider gainSlider, frequencySlider, resonanceSlider;
     ScopedPointer<ResizableCornerComponent> resizer;
     ComponentBoundsConstrainer resizeLimits;
     

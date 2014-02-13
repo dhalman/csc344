@@ -56,6 +56,7 @@ public:
     bool silenceInProducesSilenceOut() const override;
     double getTailLengthSeconds() const override;
     void calcCoefs();
+    void calcPoles();
     void printPoles(std::complex<double> *poles);
     int getDelayIndex(int bufferIndex, int samplesDelayed);
     
@@ -93,11 +94,12 @@ public:
     {
         gainParam = 0,
         freqParam,
+        resoParam,
         
         totalNumParams
     };
     
-    float gain, frequency;
+    double gain, frequency, resonance;
     
 private:
     //==============================================================================
