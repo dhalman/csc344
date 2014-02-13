@@ -12,6 +12,7 @@
 #define __PLUGINPROCESSOR_H_526ED7A9__
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include <complex>
 
 
 //==============================================================================
@@ -54,6 +55,9 @@ public:
     bool producesMidi() const override;
     bool silenceInProducesSilenceOut() const override;
     double getTailLengthSeconds() const override;
+    void calcCoefs();
+    void printPoles(std::complex<double> *poles);
+    int getDelayIndex(int bufferIndex, int samplesDelayed);
     
     //==============================================================================
     int getNumPrograms() override                                               { return 0; }

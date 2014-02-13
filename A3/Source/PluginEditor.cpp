@@ -25,12 +25,12 @@ delaySlider ("delay")
     addAndMakeVisible (gainSlider);
     gainSlider.setSliderStyle (Slider::Rotary);
     gainSlider.addListener (this);
-    gainSlider.setRange (0.0, 1.0, 0.01);
+    gainSlider.setRange (0.0, 10.0, 0.1);
     
     addAndMakeVisible (delaySlider);
     delaySlider.setSliderStyle (Slider::Rotary);
     delaySlider.addListener (this);
-    delaySlider.setRange (0.0, 3.14, .0001);
+    delaySlider.setRange (100, 20000, 1);
     
     // add some labels for the sliders..
     gainLabel.attachToComponent (&gainSlider, false);
