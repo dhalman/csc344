@@ -18,6 +18,13 @@
 
 */
 
+/* 
+  This file has been further modified for the purpose of implementing a basic
+  genetic algorithm for CSC344. The intent is to take two similar songs and
+  linearly traverse them in parallel, choosing which song to pull the next beat
+  from based on tuneable parameters.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
