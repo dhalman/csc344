@@ -64,17 +64,16 @@ public:
     
     // Perform after all initial values have been set.
     void initEnvelope() {
-        double cyclesPerSecond = 1 / attackTime;
-        double cyclesPerSample = cyclesPerSecond / sampleRate;
-        attackDelta = cyclesPerSample;
-        decayDelta =  1 / (decayTime * sampleRate);
-        releaseDelta = 1 / (releaseTime * sampleRate);
-        
         if (sampleRate == 0) {
             std::cout << "Envelope Error: Sample rate not set." << std::endl;
-        } else {
-            init = true;
+            return;
         }
+        
+        attackDelta  = 1 / (attackTime  * sampleRate);
+        decayDelta   = 1 / (decayTime   * sampleRate);
+        releaseDelta = 1 / (releaseTime * sampleRate);
+        init = true;
+        
     }
     
     // Must be called before initEnvelope()
