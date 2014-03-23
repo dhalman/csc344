@@ -70,7 +70,7 @@ public:
 
 
 private:
-    Synthesiser synth;
+    Synthesiser sinSynth, sawSynth;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Csc344finalAudioProcessor)

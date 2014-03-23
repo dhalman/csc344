@@ -12,10 +12,10 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-class SineWaveSound : public SynthesiserSound
+class WaveSound : public SynthesiserSound
 {
 public:
-    SineWaveSound() {}
+    WaveSound() {}
     
     bool appliesToNote (const int /*midiNoteNumber*/)           { return true; }
     bool appliesToChannel (const int /*midiChannel*/)           { return true; }
@@ -256,7 +256,7 @@ public:
     
     bool canPlaySound (SynthesiserSound* sound)
     {
-        return dynamic_cast <SineWaveSound*> (sound) != 0;
+        return dynamic_cast <WaveSound*> (sound) != 0;
     }
     
     void modifyLfo(double lfoPerSecond, double *lfoDelta) {
@@ -284,19 +284,10 @@ public:
         env1->setOutput(1);
         env1->release();
         
-        // Pure sine-wave bass note (midi# between 36 and 48) matches fundamental
-        double cyclesPerSecond = MidiMessage::getMidiNoteInHertz(36 + midiNoteNumber % 24);
-        double cyclesPerSample = cyclesPerSecond / getSampleRate();
-        angleDelta = cyclesPerSample * 2.0 * double_Pi;
-        
         // Fundamental note
-        double cyclesPerSecond1 = MidiMessage::getMidiNoteInHertz(midiNoteNumber);
-        double cyclesPerSample1 = cyclesPerSecond1 / getSampleRate();
-        angleDelta1 = cyclesPerSample1 * 2.0 * double_Pi;
-        
-        // Saw wave
-        double cyclesPerSecond2 = MidiMessage::getMidiNoteInHertz(midiNoteNumber);
-        angleDelta2 = cyclesPerSecond2 / getSampleRate();
+        oscillatorFreq = MidiMessage::getMidiNoteInHertz(midiNoteNumber);
+        setFrequency(oscillatorFreq);
+        setMode(mode);
         
         // LFO
         baseLfoFreq = 8;
@@ -328,29 +319,13 @@ public:
         {
             while (--numSamples >= 0)
             {
-                // Sum 3 oscillator outputs
-                const float currentSample =
-                (float) (sin (currentAngle)  +
-                         sin (currentAngle1) * env1->getOutput() +
-                         sin (currentAngle2) * (1 - env1->getOutput()))
-                 * env->getOutput();
-                
                 // Mono output
                 for (int i = outputBuffer.getNumChannels(); --i >= 0;)
-                    *outputBuffer.getSampleData(i, startSample) += currentSample;
-                
+                    *outputBuffer.getSampleData(i, startSample) += getOutput();
                 // Increment oscillators
                 lfo->stepLfo();
                 
                 stepOscillator(nullptr, (1 + lfo->getOutput()) * .005 * env1->getOutput());
-                
-                currentAngle1 += angleDelta1 * env1->getOutput();
-                
-                currentAngle2 += angleDelta2 * env1->getOutput() / 2;
-                
-                if (currentAngle2 >= level / 4) {
-                    currentAngle2 = level / 4 * -1;
-                }
                 
                 // Push the envelope
                 env->stepEnvelope();
@@ -360,7 +335,6 @@ public:
                 lfo->setFrequency((1 - env1->getOutput()) * baseLfoFreq);
                 ++startSample;
             }
-            
         }
         
         // Note is done playing when output is 0 and envelope is in release
@@ -370,7 +344,7 @@ public:
         }
     }
     
-    void changeMode(int newMode) {
+    void setMode(int newMode) {
         if (newMode == SINE) {
             mode = SINE;
             angleDelta = oscillatorFreq / getSampleRate() * 2.0 * double_Pi;
@@ -410,6 +384,10 @@ public:
         }
     }
     
+    void setFrequency(double newFrequency) {
+        angleDelta = newFrequency / getSampleRate() * 2.0 * double_Pi;
+    }
+    
     double getOutput() {
         return mode == SINE ? sin(currentAngle) : currentAngle;
     }
@@ -434,11 +412,17 @@ const float defaultDelay = 0.5f;
 //==============================================================================
 Csc344finalAudioProcessor::Csc344finalAudioProcessor()
 {
-    // Initialise the synth...
-    for (int i = 4; --i >= 0;)
-        synth.addVoice (new OscillatorVoice());   // These voices will play our custom sine-wave sounds..
+    OscillatorVoice *v1 = new OscillatorVoice();
+    OscillatorVoice *v2 = new OscillatorVoice();
     
-    synth.addSound (new SineWaveSound());
+    v1->setMode(0);
+    v2->setMode(1);
+    
+    sinSynth.addVoice(v1);
+    sawSynth.addVoice(v2);
+ 
+    sinSynth.addSound(new WaveSound());
+    sawSynth.addSound(new WaveSound());
 }
 
 Csc344finalAudioProcessor::~Csc344finalAudioProcessor()
@@ -551,7 +535,8 @@ void Csc344finalAudioProcessor::prepareToPlay (double sampleRate, int /*samplesP
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    synth.setCurrentPlaybackSampleRate (sampleRate);
+    sinSynth.setCurrentPlaybackSampleRate (sampleRate);
+    sawSynth.setCurrentPlaybackSampleRate (sampleRate);
     keyboardState.reset();
 }
 
@@ -566,13 +551,13 @@ void Csc344finalAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuf
 {
     const int numSamples = buffer.getNumSamples();
 
-    
     // Now pass any incoming midi messages to our keyboard state object, and let it
     // add messages to the buffer if the user is clicking on the on-screen keys
     keyboardState.processNextMidiBuffer (midiMessages, 0, numSamples, true);
     
     // and now get the synth to process these midi events and generate its output.
-    synth.renderNextBlock (buffer, midiMessages, 0, numSamples);
+    sinSynth.renderNextBlock (buffer, midiMessages, 0, numSamples);
+    sawSynth.renderNextBlock (buffer, midiMessages, 0, numSamples);
 }
 
 AudioProcessorEditor* Csc344finalAudioProcessor::createEditor()

@@ -450,7 +450,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     //[UserPreSize]
     //[/UserPreSize]
 
-    setSize (600, 400);
+    setSize (600, 500);
 
 
     //[Constructor] You can add your own custom stuff here..
