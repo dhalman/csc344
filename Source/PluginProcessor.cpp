@@ -23,10 +23,10 @@ public:
     SynthEnvelope()
     : output (0),
     attackLevel (1),
-    attackTime (0),
-    decayTime (0),
-    sustainLevel (1),
-    releaseTime (0),
+    attackTime (0.2),
+    decayTime (.2),
+    sustainLevel (.5),
+    releaseTime (.2),
     state (ENV_ATTACK),
     sampleRate (0)
     {
@@ -277,11 +277,20 @@ public:
         
         setFrequency(oscillatorFreq);
         setMode(mode);
+        env1->reset();
+        env2->reset();
     }
     
     void stopNote (bool allowTailOff) {
+        if (freqModIndex == ENV1 || freqModIndex == ENV2 ||
+            ampModIndex == ENV1 || ampModIndex == ENV2) {
+            env1->release();
+            env2->release();
+        } else {
             clearCurrentNote();
             angleDelta = 0.0;
+        }
+        
     }
     
     void pitchWheelMoved (int /*newValue*/)
@@ -307,6 +316,15 @@ public:
                 stepOscillator();
                 
                 ++startSample;
+                
+                if (freqModIndex == ENV1 || freqModIndex == ENV2 ||
+                    ampModIndex == ENV1 || ampModIndex == ENV2) {
+                    if (env1->getState() == env1->ENV_RELEASE && env1->output == 0 &&
+                        env2->getState() == env2->ENV_RELEASE && env2->output == 0) {
+                        clearCurrentNote();
+                        angleDelta = 0.0;
+                    }
+                }
             }
         }
     }
@@ -351,7 +369,7 @@ public:
             // Max frequency is angleDelta * max env level
             if (freqModIndex == LFO1 || freqModIndex == LFO2) {
                 // Add lfo offset
-                tmpDelta += *freqMod;
+                tmpDelta *= 1 + *freqMod;
             } else if (freqModIndex == ENV1 || freqModIndex == ENV2) {
                 // Multiply by env output
                 tmpDelta *= *freqMod;
@@ -380,6 +398,13 @@ public:
 
         if (ampMod != nullptr) {
             tmpLevel *= *ampMod;
+            if (freqModIndex == LFO1 || freqModIndex == LFO2) {
+                // Add lfo offset
+                tmpLevel += *ampMod;
+            } else if (freqModIndex == ENV1 || freqModIndex == ENV2) {
+                // Multiply by env output
+                tmpLevel *= *ampMod;
+            }
         }
         
         return tmpLevel * (mode == SINE ? sin(currentAngle) : currentAngle);
@@ -394,8 +419,10 @@ public:
         } else if (index == 1) {
             freqMod = &lfo2->output;
         } else if (index == 2) {
+            env1->initEnvelope();
             freqMod = &env1->output;
         } else if (index == 3) {
+            env2->initEnvelope();
             freqMod = &env2->output;
         } else {
             freqMod = nullptr;
@@ -859,6 +886,7 @@ void Csc344finalAudioProcessor::setLfo2Amp(double newVal){
 }
 
 void Csc344finalAudioProcessor::setEnv1AttackTime(double newVal){
+    std::cout<<"test"<<std::endl;
     env1->setAttackTime(newVal);
 }
 
