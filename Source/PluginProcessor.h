@@ -13,10 +13,21 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
-
 //==============================================================================
 /**
 */
+class WaveSound : public SynthesiserSound
+{
+public:
+    WaveSound() {}
+    
+    bool appliesToNote (const int /*midiNoteNumber*/)           { return true; }
+    bool appliesToChannel (const int /*midiChannel*/)           { return true; }
+};
+
+//==============================================================================
+
+
 class Csc344finalAudioProcessor  : public AudioProcessor
 {
 public:
@@ -67,6 +78,65 @@ public:
     void setStateInformation (const void* data, int sizeInBytes);
     
     MidiKeyboardState keyboardState;
+    
+    void setSinFreq(double newVal);
+    
+    void setSinAmp(double newVal);
+    
+    void setSawFreq(double newVal);
+    
+    void setSawAmp(double newVal);
+    
+    void setLfo1Freq(double newVal);
+    
+    void setLfo1Amp(double newVal);
+    
+    void setLfo2Freq(double newVal);
+    
+    void setLfo2Amp(double newVal);
+    
+    void setEnv1AttackTime(double newVal);
+    
+    void setEnv1AttackLevel(double newVal);
+    
+    void setEnv1DecayTime(double newVal);
+    
+    void setEnv1SustainLevel(double newVal);
+    
+    void setEnv1ReleaseTime(double newVal);
+    
+    void setEnv2AttackTime(double newVal);
+    
+    void setEnv2AttackLevel(double newVal);
+    
+    void setEnv2DecayTime(double newVal);
+    
+    void setEnv2SustainLevel(double newVal);
+    
+    void setEnv2ReleaseTime(double newVal);
+    
+    void setLowPassAmp(double newVal);
+    
+    void setLowPassFreq(double newVal);
+    
+    void setLowPassReso(double newVal);
+    
+    float getParameterDefaultValue(int index);
+    
+    enum Parameters
+    {
+        sinFreq = 0, sinAmp,
+        sawFreq, sawAmp,
+        sinFreqMod, sinAmpMod,
+        sawFreqMod, sawAmpMod,
+        lfo1Freq, lfo1Amp,
+        lfo2Freq, lfo2Amp,
+        env1AT, env1AL, env1DT, env1SL, env1RT,
+        env2AT, env2AL, env2DT, env2SL, env2RT,
+        filterFreq, filterAmp, filterReso,
+        
+        totalNumParams
+    };
 
 
 private:

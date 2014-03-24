@@ -10,16 +10,10 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <thread>
 
 //==============================================================================
-class WaveSound : public SynthesiserSound
-{
-public:
-    WaveSound() {}
-    
-    bool appliesToNote (const int /*midiNoteNumber*/)           { return true; }
-    bool appliesToChannel (const int /*midiChannel*/)           { return true; }
-};
+
 
 //==============================================================================
 
@@ -235,24 +229,25 @@ public:
     OscillatorVoice()
     : angleDelta (0.0)
     {
-        if (!env) {
-            env = new SynthEnvelope();
+        if (!env1) {
             env1 = new SynthEnvelope();
-            env->setSampleRate(getSampleRate());
+            env2 = new SynthEnvelope();
             env1->setSampleRate(getSampleRate());
+            env2->setSampleRate(getSampleRate());
             
             // Init last (Requires sample rate and env times to be set).
-            env->initEnvelope();
             env1->initEnvelope();
+            env2->initEnvelope();
             
-            lfo = new SynthLfo();
-            lfo->setSampleRate(getSampleRate());
+            lfo1 = new SynthLfo();
+            lfo1->setSampleRate(getSampleRate());
         }
     }
     
-    SynthEnvelope *env = nullptr;
     SynthEnvelope *env1 = nullptr;
-    SynthLfo *lfo = nullptr;
+    SynthEnvelope *env2 = nullptr;
+    SynthLfo *lfo1 = nullptr;
+    SynthLfo *lfo2 = nullptr;
     
     bool canPlaySound (SynthesiserSound* sound)
     {
@@ -272,37 +267,37 @@ public:
         level = .7;
         midiNumber = midiNoteNumber;
         
-        lfo->setAngle(0);
+        lfo1->setAngle(0);
         
         // env is output envelope
-        env->setOutput(0);
-        env->setState(0);
-        env->setReleaseTime(.2);
+        env1->setOutput(0);
+        env1->setState(0);
+        env1->setReleaseTime(.2);
         
-        // env1 fires release over and over for a "diving" effect
-        env1->setReleaseTime(2);
-        env1->setOutput(1);
-        env1->release();
+        // env2 fires release over and over for a "diving" effect
+        env2->setReleaseTime(2);
+        env2->setOutput(1);
+        env2->release();
         
         // Fundamental note
-        oscillatorFreq = MidiMessage::getMidiNoteInHertz(midiNoteNumber);
+        //oscillatorFreq = MidiMessage::getMidiNoteInHertz(midiNoteNumber);
+        
         setFrequency(oscillatorFreq);
         setMode(mode);
         
         // LFO
         baseLfoFreq = 8;
-        lfo->setFrequency(baseLfoFreq);
-        lfo->setDepth(1);
+        lfo1->setFrequency(baseLfoFreq);
+        lfo1->setDepth(1);
         
         std::cout << "MidiNote: " << midiNoteNumber << std::endl;
     }
     
     void stopNote (bool allowTailOff) {
+        env1->release();
         if (!allowTailOff) {
-            env->setOutput(0);
+            env1->setOutput(0);
         }
-        
-        env->release();
     }
     
     void pitchWheelMoved (int /*newValue*/)
@@ -322,25 +317,35 @@ public:
                 // Mono output
                 for (int i = outputBuffer.getNumChannels(); --i >= 0;)
                     *outputBuffer.getSampleData(i, startSample) += getOutput();
+               
                 // Increment oscillators
-                lfo->stepLfo();
+                stepModifiers();
                 
-                stepOscillator(nullptr, (1 + lfo->getOutput()) * .005 * env1->getOutput());
+                stepOscillator(env2, 0);
                 
-                // Push the envelope
-                env->stepEnvelope();
-                env1->stepEnvelope();
-                
-                // And mess with the lfo
-                lfo->setFrequency((1 - env1->getOutput()) * baseLfoFreq);
                 ++startSample;
             }
         }
         
         // Note is done playing when output is 0 and envelope is in release
-        if (env->getState() == env->ENV_RELEASE && env->getOutput() <= 0) {
+        if (env1->getState() == env1->ENV_RELEASE && env1->getOutput() <= 0) {
             clearCurrentNote();
             angleDelta = 0.0;
+        }
+    }
+    
+    void stepModifiers() {
+        if (lfo1) {
+            lfo1->stepLfo();
+        }
+        if (lfo2) {
+            lfo2->stepLfo();
+        }
+        if (env1) {
+            env1->stepEnvelope();
+        }
+        if (env2) {
+            env2->stepEnvelope();
         }
     }
     
@@ -372,7 +377,7 @@ public:
         
         currentAngle += tmpDelta + offset;
         
-        // Reset saw if in saw mode
+        // Reset saw if in saw mode and period is up
         if (mode == SAW && currentAngle >= level) {
             currentAngle = level * -1;
         }
@@ -385,11 +390,16 @@ public:
     }
     
     void setFrequency(double newFrequency) {
-        angleDelta = newFrequency / getSampleRate() * 2.0 * double_Pi;
+        oscillatorFreq = newFrequency;
+        //angleDelta = newFrequency / getSampleRate() * 2.0 * double_Pi;
+    }
+    
+    void setAmplitude(double newAmplitude) {
+        level = newAmplitude;
     }
     
     double getOutput() {
-        return mode == SINE ? sin(currentAngle) : currentAngle;
+        return level * mode == SINE ? sin(currentAngle) : currentAngle;
     }
     
 private:
@@ -408,18 +418,35 @@ private:
 
 const float defaultGain = 1.0f;
 const float defaultDelay = 0.5f;
+OscillatorVoice *sinVoice, *sawVoice;
+SynthLfo *lfo1, *lfo2;
+SynthEnvelope *env1, *env2;
+
 
 //==============================================================================
 Csc344finalAudioProcessor::Csc344finalAudioProcessor()
 {
-    OscillatorVoice *v1 = new OscillatorVoice();
-    OscillatorVoice *v2 = new OscillatorVoice();
+    sinVoice = new OscillatorVoice();
+    sawVoice = new OscillatorVoice();
     
-    v1->setMode(0);
-    v2->setMode(1);
+    lfo1 = new SynthLfo();
+    lfo2 = new SynthLfo();
     
-    sinSynth.addVoice(v1);
-    sawSynth.addVoice(v2);
+    env1 = new SynthEnvelope();
+    env2 = new SynthEnvelope();
+    
+    lfo1->setSampleRate(getSampleRate());
+    lfo2->setSampleRate(getSampleRate());
+    env1->setSampleRate(getSampleRate());
+    env2->setSampleRate(getSampleRate());
+    env1->initEnvelope();
+    env2->initEnvelope();
+    
+    ((OscillatorVoice*)sinVoice)->setMode(0);
+    ((OscillatorVoice*)sawVoice)->setMode(1);
+    
+    sinSynth.addVoice(sinVoice);
+    sawSynth.addVoice(sawVoice);
  
     sinSynth.addSound(new WaveSound());
     sawSynth.addSound(new WaveSound());
@@ -437,26 +464,223 @@ const String Csc344finalAudioProcessor::getName() const
 
 int Csc344finalAudioProcessor::getNumParameters()
 {
-    return 0;
+
+    return 25;
 }
 
 float Csc344finalAudioProcessor::getParameter (int index)
 {
-    return 0.0f;
+    // This method will be called by the host, probably on the audio thread, so
+    // it's absolutely time-critical. Don't use critical sections or anything
+    // UI-related, or anything at all that may block in any way!
+    switch (index)
+    {
+        case sinFreq:     return 0;
+        case sinAmp:     return 0;
+        case sawFreq:     return 0;
+        case sawAmp:   return 0;
+        case sinFreqMod:     return 0;
+        case sinAmpMod:     return 0;
+        case sawFreqMod:     return 0;
+        case sawAmpMod:   return 0;
+        case lfo1Freq:     return 0;
+        case lfo1Amp:     return 0;
+        case lfo2Freq:     return 0;
+        case lfo2Amp:   return 0;
+        case env1AT:     return 0;
+        case env1AL:     return 0;
+        case env1DT:     return 0;
+        case env1SL:   return 0;
+        case env1RT:     return 0;
+        case env2AT:     return 0;
+        case env2AL:     return 0;
+        case env2DT:     return 0;
+        case env2SL:   return 0;
+        case env2RT:     return 0;
+        case filterFreq:     return 0;
+        case filterAmp:   return 0;
+        case filterReso:     return 0;
+        default:            return 0.0f;
+         
+    }
 }
 
 void Csc344finalAudioProcessor::setParameter (int index, float newValue)
 {
+    // This method will be called by the host, probably on the audio thread, so
+    // it's absolutely time-critical. Don't use critical sections or anything
+    // UI-related, or anything at all that may block in any way!
+    switch (index)
+    {
+        case sinFreq:
+            setSinFreq(newValue);
+            break;
+        case sinAmp:
+            setSinAmp(newValue);
+            break;
+        case sawFreq:
+            setSawFreq(newValue);
+            break;
+        case sawAmp:
+            setSawAmp(newValue);
+
+            break;
+        case sinFreqMod:
+
+            break;
+        case sinAmpMod:
+            
+            break;
+        case sawFreqMod:
+            
+            break;
+        case sawAmpMod:
+            
+            break;
+        case lfo1Freq:
+            setLfo1Freq(newValue);
+            
+            break;
+        case lfo1Amp:
+            setLfo1Amp(newValue);
+            
+            break;
+        case lfo2Freq:
+            setLfo2Freq(newValue);
+            
+            break;
+        case lfo2Amp:
+            setLfo2Amp(newValue);
+            
+            break;
+        case env1AT:
+            setEnv1AttackTime(newValue);
+            
+            break;
+        case env1AL:
+            setEnv1AttackLevel(newValue);
+
+            break;
+        case env1DT:
+            setEnv1DecayTime(newValue);
+
+            break;
+        case env1SL:
+            setEnv1SustainLevel(newValue);
+
+            break;
+        case env1RT:
+            setEnv1ReleaseTime(newValue);
+
+            break;
+        case env2AT:
+            setEnv2AttackTime(newValue);
+            
+            break;
+        case env2AL:
+            setEnv2AttackLevel(newValue);
+            
+            break;
+        case env2DT:
+            setEnv2DecayTime(newValue);
+            
+            break;
+        case env2SL:
+            setEnv2SustainLevel(newValue);
+            
+            break;
+        case env2RT:
+            setEnv2ReleaseTime(newValue);
+            
+            break;
+        case filterFreq:
+            setLowPassFreq(newValue);
+            
+            break;
+        case filterAmp:
+            setLowPassAmp(newValue);
+            
+            break;
+        case filterReso:
+            setLowPassReso(newValue);
+            
+            break;
+        default:
+            break;
+    }
+}
+
+float Csc344finalAudioProcessor::getParameterDefaultValue (int index)
+{
+    switch (index)
+    {
+        case sinFreq:       return 400;
+        case sinAmp:        return 1;
+        case sawFreq:       return 400;
+        case sawAmp:        return 0;
+        case sinFreqMod:    return 0;
+        case sinAmpMod:     return 0;
+        case sawFreqMod:    return 0;
+        case sawAmpMod:     return 0;
+        case lfo1Freq:      return 0;
+        case lfo1Amp:       return 0;
+        case lfo2Freq:      return 0;
+        case lfo2Amp:       return 0;
+        case env1AT:        return 0;
+        case env1AL:        return 0;
+        case env1DT:        return 0;
+        case env1SL:        return 0;
+        case env1RT:        return 0;
+        case env2AT:        return 0;
+        case env2AL:        return 0;
+        case env2DT:        return 0;
+        case env2SL:        return 0;
+        case env2RT:        return 0;
+        case filterFreq:    return 20000;
+        case filterAmp:     return 0;
+        case filterReso:    return 0;
+        default:            return 0.0f;
+    }
 }
 
 const String Csc344finalAudioProcessor::getParameterName (int index)
 {
+    switch (index)
+    {
+        case sinFreq:       return "Sin Frequency";
+        case sinAmp:        return "Sin Amplitude";
+        case sawFreq:       return "Saw Frequency";
+        case sawAmp:        return "Saw amplitude";
+        case sinFreqMod:    return "Sin Frequency Modifier";
+        case sinAmpMod:     return "Sin Amplitude Modifier";
+        case sawFreqMod:    return "Saw Frequency Modifier";
+        case sawAmpMod:     return "Saw Amplitude Modifier";
+        case lfo1Freq:      return "Lfo1 Frequency";
+        case lfo1Amp:       return "Lfo1 Amplitude";
+        case lfo2Freq:      return "Lfo2 Frequency";
+        case lfo2Amp:       return "Lfo2 Amplitude";
+        case env1AT:        return "Env1 Attack Time";
+        case env1AL:        return "Env1 Attack Level";
+        case env1DT:        return "Env1 Decay Time";
+        case env1SL:        return "Env1 Sustain Level";
+        case env1RT:        return "Env1 Release Time";
+        case env2AT:        return "Env2 Attack Time";
+        case env2AL:        return "Env2 Attack Level";
+        case env2DT:        return "Env2 Decay Time";
+        case env2SL:        return "Env2 Sustain Level";
+        case env2RT:        return "Env2 Release Time";
+        case filterFreq:    return "Filter Frequency";
+        case filterAmp:     return "Filter Amplitude";
+        case filterReso:    return "Filter Resonance";
+        default:            break;
+    }
+    
     return String::empty;
 }
 
 const String Csc344finalAudioProcessor::getParameterText (int index)
 {
-    return String::empty;
+    return String (getParameter (index), 2);
 }
 
 const String Csc344finalAudioProcessor::getInputChannelName (int channelIndex) const
@@ -585,3 +809,88 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new Csc344finalAudioProcessor();
 }
+
+void Csc344finalAudioProcessor::setSinFreq(double newVal){
+    sinVoice->setFrequency(newVal);
+}
+
+void Csc344finalAudioProcessor::setSinAmp(double newVal){
+    sinVoice->setAmplitude(newVal);
+}
+
+void Csc344finalAudioProcessor::setSawFreq(double newVal){
+    sawVoice->setFrequency(newVal);
+}
+
+void Csc344finalAudioProcessor::setSawAmp(double newVal){
+    sawVoice->setAmplitude(newVal);
+}
+
+void Csc344finalAudioProcessor::setLfo1Freq(double newVal){
+    lfo1->setFrequency(newVal);
+}
+
+void Csc344finalAudioProcessor::setLfo1Amp(double newVal){
+    lfo1->setDepth(newVal);
+}
+
+void Csc344finalAudioProcessor::setLfo2Freq(double newVal){
+    lfo2->setFrequency(newVal);
+}
+
+void Csc344finalAudioProcessor::setLfo2Amp(double newVal){
+    lfo2->setDepth(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv1AttackTime(double newVal){
+    env1->setAttackTime(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv1AttackLevel(double newVal){
+    env1->setAttackLevel(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv1DecayTime(double newVal){
+    env1->setDecayTime(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv1SustainLevel(double newVal){
+    env1->setSustainLevel(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv1ReleaseTime(double newVal){
+    env1->setReleaseTime(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv2AttackTime(double newVal){
+    env2->setAttackTime(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv2AttackLevel(double newVal){
+    env2->setAttackLevel(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv2DecayTime(double newVal){
+    env2->setDecayTime(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv2SustainLevel(double newVal){
+    env2->setSustainLevel(newVal);
+}
+
+void Csc344finalAudioProcessor::setEnv2ReleaseTime(double newVal){
+    env2->setReleaseTime(newVal);
+}
+
+void Csc344finalAudioProcessor::setLowPassAmp(double newVal){
+    std::cout<<"test"<<std::endl;
+}
+
+void Csc344finalAudioProcessor::setLowPassFreq(double newVal){
+    std::cout<<"test"<<std::endl;
+}
+
+void Csc344finalAudioProcessor::setLowPassReso(double newVal){
+    std::cout<<"test"<<std::endl;
+}
+

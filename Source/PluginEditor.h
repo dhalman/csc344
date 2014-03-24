@@ -53,7 +53,7 @@ public:
     void resized();
     void sliderValueChanged (Slider* sliderThatWasMoved);
     void comboBoxChanged (ComboBox* comboBoxThatHasChanged);
-
+    Csc344finalAudioProcessor *getProcessor();
 
 
 private:
@@ -115,8 +115,10 @@ private:
     ScopedPointer<Label> label27;
     ScopedPointer<Label> label28;
     ScopedPointer<Label> label29;
+    
+    Csc344finalAudioProcessor *proc;
 
-
+    
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Csc344finalAudioProcessorEditor)
 };

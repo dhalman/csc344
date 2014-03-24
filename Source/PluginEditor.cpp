@@ -21,7 +21,7 @@
 //[/Headers]
 
 #include "PluginEditor.h"
-
+#include "PluginProcessor.h"
 
 //[MiscUserDefs] You can add your own user definitions and misc code here...
 //[/MiscUserDefs]
@@ -30,20 +30,22 @@
 Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAudioProcessor* ownerFilter)
 : AudioProcessorEditor (ownerFilter)
 {
+    proc = ownerFilter;
+    
     addAndMakeVisible (freq1 = new Slider ("Frequency1"));
     freq1->setTooltip (TRANS("Frequency1"));
     freq1->setRange (20, 20000, 1);
     freq1->setSliderStyle (Slider::Rotary);
     freq1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     freq1->addListener (this);
-    freq1->setSkewFactor (1.5);
-
+    freq1->setSkewFactor (.5);
+    
     addAndMakeVisible (amp1 = new Slider ("Amplitude1"));
     amp1->setRange (0, 1, 0.01);
     amp1->setSliderStyle (Slider::Rotary);
     amp1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     amp1->addListener (this);
-
+    
     addAndMakeVisible (freqmod1 = new ComboBox ("FreqMod1"));
     freqmod1->setEditableText (false);
     freqmod1->setJustificationType (Justification::centredLeft);
@@ -54,7 +56,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     freqmod1->addItem (TRANS("Envelope1"), 3);
     freqmod1->addItem (TRANS("Envelope2"), 4);
     freqmod1->addListener (this);
-
+    
     addAndMakeVisible (ampmod1 = new ComboBox ("AmpMod1"));
     ampmod1->setEditableText (false);
     ampmod1->setJustificationType (Justification::centredLeft);
@@ -65,21 +67,21 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     ampmod1->addItem (TRANS("Envelope1"), 3);
     ampmod1->addItem (TRANS("Envelope2"), 4);
     ampmod1->addListener (this);
-
+    
     addAndMakeVisible (freq2 = new Slider ("Frequency1"));
     freq2->setTooltip (TRANS("Frequency1"));
     freq2->setRange (20, 20000, 1);
     freq2->setSliderStyle (Slider::Rotary);
     freq2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     freq2->addListener (this);
-    freq2->setSkewFactor (1.5);
-
+    freq2->setSkewFactor (.5);
+    
     addAndMakeVisible (amp2 = new Slider ("Amplitude1"));
     amp2->setRange (0, 1, 0.01);
     amp2->setSliderStyle (Slider::Rotary);
     amp2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     amp2->addListener (this);
-
+    
     addAndMakeVisible (freqmod2 = new ComboBox ("FreqMod2"));
     freqmod2->setEditableText (false);
     freqmod2->setJustificationType (Justification::centredLeft);
@@ -90,7 +92,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     freqmod2->addItem (TRANS("Envelope1"), 3);
     freqmod2->addItem (TRANS("Envelope2"), 4);
     freqmod2->addListener (this);
-
+    
     addAndMakeVisible (ampmod2 = new ComboBox ("AmpMod2"));
     ampmod2->setEditableText (false);
     ampmod2->setJustificationType (Justification::centredLeft);
@@ -101,119 +103,119 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     ampmod2->addItem (TRANS("Envelope1"), 3);
     ampmod2->addItem (TRANS("Envelope2"), 4);
     ampmod2->addListener (this);
-
+    
     addAndMakeVisible (lfofreq1 = new Slider ("LFOFreq1"));
     lfofreq1->setTooltip (TRANS("Frequency1"));
     lfofreq1->setRange (0.1, 10, 0.1);
     lfofreq1->setSliderStyle (Slider::Rotary);
     lfofreq1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     lfofreq1->addListener (this);
-    lfofreq1->setSkewFactor (1.5);
-
+    lfofreq1->setSkewFactor (.5);
+    
     addAndMakeVisible (lfoamp1 = new Slider ("LFOAmp1"));
     lfoamp1->setRange (0, 1, 0.01);
     lfoamp1->setSliderStyle (Slider::Rotary);
     lfoamp1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     lfoamp1->addListener (this);
-
+    
     addAndMakeVisible (lfofreq2 = new Slider ("LFOFreq1"));
     lfofreq2->setTooltip (TRANS("Frequency1"));
     lfofreq2->setRange (0.1, 10, 0.1);
     lfofreq2->setSliderStyle (Slider::Rotary);
     lfofreq2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     lfofreq2->addListener (this);
-    lfofreq2->setSkewFactor (1.5);
-
+    lfofreq2->setSkewFactor (.5);
+    
     addAndMakeVisible (lfoamp2 = new Slider ("LFOAmp2"));
     lfoamp2->setRange (0, 10, 0.1);
     lfoamp2->setSliderStyle (Slider::Rotary);
     lfoamp2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     lfoamp2->addListener (this);
-
+    
     addAndMakeVisible (attacktime1 = new Slider ("AttackTime1"));
     attacktime1->setTooltip (TRANS("Frequency1"));
     attacktime1->setRange (0, 2, 0.001);
     attacktime1->setSliderStyle (Slider::Rotary);
     attacktime1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     attacktime1->addListener (this);
-
+    
     addAndMakeVisible (attacklevel1 = new Slider ("AttackLevel1"));
     attacklevel1->setRange (0, 1, 0.01);
     attacklevel1->setSliderStyle (Slider::Rotary);
     attacklevel1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     attacklevel1->addListener (this);
-
+    
     addAndMakeVisible (decaytime1 = new Slider ("DecayTime1"));
     decaytime1->setTooltip (TRANS("Frequency1"));
-    decaytime1->setRange (20, 20000, 1);
+    decaytime1->setRange (0, 2, 0.001);
     decaytime1->setSliderStyle (Slider::Rotary);
     decaytime1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     decaytime1->addListener (this);
-
+    
     addAndMakeVisible (sustainlevel1 = new Slider ("sustainlevel1"));
-    sustainlevel1->setRange (0.1, 10, 0.1);
+    sustainlevel1->setRange (0.01, 1, 0.01);
     sustainlevel1->setSliderStyle (Slider::Rotary);
     sustainlevel1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     sustainlevel1->addListener (this);
-
+    
     addAndMakeVisible (releasetime1 = new Slider ("ReleaseTime1"));
-    releasetime1->setRange (0.1, 10, 0.1);
+    releasetime1->setRange (0, 2, 0.001);
     releasetime1->setSliderStyle (Slider::Rotary);
     releasetime1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     releasetime1->addListener (this);
-
+    
     addAndMakeVisible (attacktime2 = new Slider ("AttackTime2"));
     attacktime2->setTooltip (TRANS("Frequency1"));
-    attacktime2->setRange (20, 20000, 1);
+    attacktime2->setRange (0, 2, 0.001);
     attacktime2->setSliderStyle (Slider::Rotary);
     attacktime2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     attacktime2->addListener (this);
-
+    
     addAndMakeVisible (attacklevel2 = new Slider ("AttackLevel2"));
     attacklevel2->setRange (0, 1, 0.01);
     attacklevel2->setSliderStyle (Slider::Rotary);
     attacklevel2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     attacklevel2->addListener (this);
-
+    
     addAndMakeVisible (decaytime2 = new Slider ("DecayTime2"));
     decaytime2->setTooltip (TRANS("Frequency1"));
-    decaytime2->setRange (20, 20000, 1);
+    decaytime2->setRange (0, 2, 0.001);
     decaytime2->setSliderStyle (Slider::Rotary);
     decaytime2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     decaytime2->addListener (this);
-
+    
     addAndMakeVisible (sustainlevel2 = new Slider ("sustainlevel2"));
-    sustainlevel2->setRange (0.1, 10, 0.1);
+    sustainlevel2->setRange (0.1, 1, 0.01);
     sustainlevel2->setSliderStyle (Slider::Rotary);
     sustainlevel2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     sustainlevel2->addListener (this);
-
+    
     addAndMakeVisible (releasetime2 = new Slider ("ReleaseTime2"));
-    releasetime2->setRange (0.1, 10, 0.1);
+    releasetime2->setRange (0, 2, 0.001);
     releasetime2->setSliderStyle (Slider::Rotary);
     releasetime2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     releasetime2->addListener (this);
-
+    
     addAndMakeVisible (filteramp1 = new Slider ("FilterAmp1"));
     filteramp1->setRange (0, 1, 0.01);
     filteramp1->setSliderStyle (Slider::Rotary);
     filteramp1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     filteramp1->addListener (this);
-
+    
     addAndMakeVisible (filterfreq1 = new Slider ("FilterFreq1"));
     filterfreq1->setTooltip (TRANS("Frequency1"));
     filterfreq1->setRange (20, 20000, 1);
     filterfreq1->setSliderStyle (Slider::Rotary);
     filterfreq1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     filterfreq1->addListener (this);
-    filterfreq1->setSkewFactor (1.5);
-
+    filterfreq1->setSkewFactor (.5);
+    
     addAndMakeVisible (filterreso1 = new Slider ("FilterReso1"));
-    filterreso1->setRange (0, 1, 0.01);
+    filterreso1->setRange (.2, .8, 0.01);
     filterreso1->setSliderStyle (Slider::Rotary);
     filterreso1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     filterreso1->addListener (this);
-
+    
     addAndMakeVisible (label = new Label ("new label",
                                           TRANS("Oscillator 1")));
     label->setFont (Font (15.00f, Font::plain));
@@ -221,7 +223,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label->setEditable (false, false, false);
     label->setColour (TextEditor::textColourId, Colours::black);
     label->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label2 = new Label ("new label",
                                            TRANS("LFO 1")));
     label2->setFont (Font (15.00f, Font::plain));
@@ -229,7 +231,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label2->setEditable (false, false, false);
     label2->setColour (TextEditor::textColourId, Colours::black);
     label2->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label3 = new Label ("new label",
                                            TRANS("Oscillator 2")));
     label3->setFont (Font (15.00f, Font::plain));
@@ -237,7 +239,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label3->setEditable (false, false, false);
     label3->setColour (TextEditor::textColourId, Colours::black);
     label3->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label4 = new Label ("new label",
                                            TRANS("Oscillator 1 Control")));
     label4->setFont (Font (15.00f, Font::plain));
@@ -245,7 +247,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label4->setEditable (false, false, false);
     label4->setColour (TextEditor::textColourId, Colours::black);
     label4->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label5 = new Label ("new label",
                                            TRANS("Oscillator 2 Control")));
     label5->setFont (Font (15.00f, Font::plain));
@@ -253,7 +255,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label5->setEditable (false, false, false);
     label5->setColour (TextEditor::textColourId, Colours::black);
     label5->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label6 = new Label ("new label",
                                            TRANS("LFO 2")));
     label6->setFont (Font (15.00f, Font::plain));
@@ -261,7 +263,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label6->setEditable (false, false, false);
     label6->setColour (TextEditor::textColourId, Colours::black);
     label6->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label7 = new Label ("new label",
                                            TRANS("Low Pass Filter")));
     label7->setFont (Font (15.00f, Font::plain));
@@ -269,7 +271,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label7->setEditable (false, false, false);
     label7->setColour (TextEditor::textColourId, Colours::black);
     label7->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label8 = new Label ("new label",
                                            TRANS("Evnelope 1")));
     label8->setFont (Font (15.00f, Font::plain));
@@ -277,7 +279,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label8->setEditable (false, false, false);
     label8->setColour (TextEditor::textColourId, Colours::black);
     label8->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label9 = new Label ("new label",
                                            TRANS("Evnelope 2")));
     label9->setFont (Font (15.00f, Font::plain));
@@ -285,7 +287,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label9->setEditable (false, false, false);
     label9->setColour (TextEditor::textColourId, Colours::black);
     label9->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label10 = new Label ("new label",
                                             TRANS("Freq")));
     label10->setFont (Font (15.00f, Font::plain));
@@ -293,7 +295,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label10->setEditable (false, false, false);
     label10->setColour (TextEditor::textColourId, Colours::black);
     label10->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label11 = new Label ("new label",
                                             TRANS("Amp")));
     label11->setFont (Font (15.00f, Font::plain));
@@ -301,7 +303,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label11->setEditable (false, false, false);
     label11->setColour (TextEditor::textColourId, Colours::black);
     label11->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label12 = new Label ("new label",
                                             TRANS("Freq")));
     label12->setFont (Font (15.00f, Font::plain));
@@ -309,7 +311,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label12->setEditable (false, false, false);
     label12->setColour (TextEditor::textColourId, Colours::black);
     label12->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label13 = new Label ("new label",
                                             TRANS("Amp")));
     label13->setFont (Font (15.00f, Font::plain));
@@ -317,7 +319,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label13->setEditable (false, false, false);
     label13->setColour (TextEditor::textColourId, Colours::black);
     label13->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label14 = new Label ("new label",
                                             TRANS("Freq")));
     label14->setFont (Font (15.00f, Font::plain));
@@ -325,7 +327,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label14->setEditable (false, false, false);
     label14->setColour (TextEditor::textColourId, Colours::black);
     label14->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label15 = new Label ("new label",
                                             TRANS("Gain")));
     label15->setFont (Font (15.00f, Font::plain));
@@ -333,7 +335,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label15->setEditable (false, false, false);
     label15->setColour (TextEditor::textColourId, Colours::black);
     label15->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label16 = new Label ("new label",
                                             TRANS("Resonance")));
     label16->setFont (Font (15.00f, Font::plain));
@@ -341,7 +343,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label16->setEditable (false, false, false);
     label16->setColour (TextEditor::textColourId, Colours::black);
     label16->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label17 = new Label ("new label",
                                             TRANS("Freq")));
     label17->setFont (Font (15.00f, Font::plain));
@@ -349,7 +351,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label17->setEditable (false, false, false);
     label17->setColour (TextEditor::textColourId, Colours::black);
     label17->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label18 = new Label ("new label",
                                             TRANS("Amp")));
     label18->setFont (Font (15.00f, Font::plain));
@@ -357,7 +359,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label18->setEditable (false, false, false);
     label18->setColour (TextEditor::textColourId, Colours::black);
     label18->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label19 = new Label ("new label",
                                             TRANS("Freq")));
     label19->setFont (Font (15.00f, Font::plain));
@@ -365,7 +367,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label19->setEditable (false, false, false);
     label19->setColour (TextEditor::textColourId, Colours::black);
     label19->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label20 = new Label ("new label",
                                             TRANS("Amp")));
     label20->setFont (Font (15.00f, Font::plain));
@@ -373,7 +375,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label20->setEditable (false, false, false);
     label20->setColour (TextEditor::textColourId, Colours::black);
     label20->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label21 = new Label ("new label",
                                             TRANS("Freq")));
     label21->setFont (Font (15.00f, Font::plain));
@@ -381,7 +383,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label21->setEditable (false, false, false);
     label21->setColour (TextEditor::textColourId, Colours::black);
     label21->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label22 = new Label ("new label",
                                             TRANS("Amp")));
     label22->setFont (Font (15.00f, Font::plain));
@@ -389,7 +391,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label22->setEditable (false, false, false);
     label22->setColour (TextEditor::textColourId, Colours::black);
     label22->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label23 = new Label ("new label",
                                             TRANS("Freq")));
     label23->setFont (Font (15.00f, Font::plain));
@@ -397,7 +399,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label23->setEditable (false, false, false);
     label23->setColour (TextEditor::textColourId, Colours::black);
     label23->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label24 = new Label ("new label",
                                             TRANS("Amp")));
     label24->setFont (Font (15.00f, Font::plain));
@@ -405,7 +407,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label24->setEditable (false, false, false);
     label24->setColour (TextEditor::textColourId, Colours::black);
     label24->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label25 = new Label ("new label",
                                             TRANS("Attack Time")));
     label25->setFont (Font (15.00f, Font::plain));
@@ -413,7 +415,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label25->setEditable (false, false, false);
     label25->setColour (TextEditor::textColourId, Colours::black);
     label25->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label26 = new Label ("new label",
                                             TRANS("Attack Level")));
     label26->setFont (Font (15.00f, Font::plain));
@@ -421,7 +423,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label26->setEditable (false, false, false);
     label26->setColour (TextEditor::textColourId, Colours::black);
     label26->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label27 = new Label ("new label",
                                             TRANS("Decay Time")));
     label27->setFont (Font (15.00f, Font::plain));
@@ -429,7 +431,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label27->setEditable (false, false, false);
     label27->setColour (TextEditor::textColourId, Colours::black);
     label27->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label28 = new Label ("new label",
                                             TRANS("Sustain Level")));
     label28->setFont (Font (15.00f, Font::plain));
@@ -437,7 +439,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label28->setEditable (false, false, false);
     label28->setColour (TextEditor::textColourId, Colours::black);
     label28->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
+    
     addAndMakeVisible (label29 = new Label ("new label",
                                             TRANS("Release Time")));
     label29->setFont (Font (15.00f, Font::plain));
@@ -445,8 +447,6 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     label29->setEditable (false, false, false);
     label29->setColour (TextEditor::textColourId, Colours::black);
     label29->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-
     //[UserPreSize]
     //[/UserPreSize]
 
@@ -598,109 +598,173 @@ void Csc344finalAudioProcessorEditor::sliderValueChanged (Slider* sliderThatWasM
 {
     //[UsersliderValueChanged_Pre]
     //[/UsersliderValueChanged_Pre]
+    double newVal = sliderThatWasMoved->getValue();
 
     if (sliderThatWasMoved == freq1)
     {
         //[UserSliderCode_freq1] -- add your slider handling code here..
         //[/UserSliderCode_freq1]
+        //getProcessor()->setSinFreq(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->sinFreq, newVal);
     }
     else if (sliderThatWasMoved == amp1)
     {
+        //getProcessor()->setSinAmp(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->sinAmp, newVal);
+
         //[UserSliderCode_amp1] -- add your slider handling code here..
         //[/UserSliderCode_amp1]
     }
     else if (sliderThatWasMoved == freq2)
     {
+        //getProcessor()->setSawFreq(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->sawFreq, newVal);
+
         //[UserSliderCode_freq2] -- add your slider handling code here..
         //[/UserSliderCode_freq2]
     }
     else if (sliderThatWasMoved == amp2)
     {
+        //getProcessor()->setSawAmp(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->sawAmp, newVal);
+
         //[UserSliderCode_amp2] -- add your slider handling code here..
         //[/UserSliderCode_amp2]
     }
     else if (sliderThatWasMoved == lfofreq1)
     {
+        //getProcessor()->setLfo1Freq(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->lfo1Freq, newVal);
+
         //[UserSliderCode_lfofreq1] -- add your slider handling code here..
         //[/UserSliderCode_lfofreq1]
     }
     else if (sliderThatWasMoved == lfoamp1)
     {
+        //getProcessor()->setLfo1Amp(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->lfo1Amp, newVal);
+        
         //[UserSliderCode_lfoamp1] -- add your slider handling code here..
         //[/UserSliderCode_lfoamp1]
     }
     else if (sliderThatWasMoved == lfofreq2)
     {
+        //getProcessor()->setLfo2Freq(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->lfo2Freq, newVal);
+
         //[UserSliderCode_lfofreq2] -- add your slider handling code here..
         //[/UserSliderCode_lfofreq2]
     }
     else if (sliderThatWasMoved == lfoamp2)
     {
+        //getProcessor()->setLfo2Amp(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->lfo2Amp, newVal);
+
         //[UserSliderCode_lfoamp2] -- add your slider handling code here..
         //[/UserSliderCode_lfoamp2]
     }
     else if (sliderThatWasMoved == attacktime1)
     {
+        //getProcessor()->setEnv1AttackTime(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env1AT, newVal);
+
         //[UserSliderCode_attacktime1] -- add your slider handling code here..
         //[/UserSliderCode_attacktime1]
     }
     else if (sliderThatWasMoved == attacklevel1)
     {
+        //getProcessor()->setEnv1AttackLevel(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env1AL, newVal);
+
         //[UserSliderCode_attacklevel1] -- add your slider handling code here..
         //[/UserSliderCode_attacklevel1]
     }
     else if (sliderThatWasMoved == decaytime1)
     {
+        //getProcessor()->setEnv1DecayTime(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env1DT, newVal);
+
         //[UserSliderCode_decaytime1] -- add your slider handling code here..
         //[/UserSliderCode_decaytime1]
     }
     else if (sliderThatWasMoved == sustainlevel1)
     {
+        //getProcessor()->setEnv1SustainLevel(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env1SL, newVal);
+
         //[UserSliderCode_sustainlevel1] -- add your slider handling code here..
         //[/UserSliderCode_sustainlevel1]
     }
     else if (sliderThatWasMoved == releasetime1)
     {
+        // getProcessor()->setEnv1ReleaseTime(newVal);
+        
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env1RT, newVal);
+
         //[UserSliderCode_releasetime1] -- add your slider handling code here..
         //[/UserSliderCode_releasetime1]
     }
     else if (sliderThatWasMoved == attacktime2)
     {
+        //getProcessor()->setEnv2AttackTime(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env2AT, newVal);
+
         //[UserSliderCode_attacktime2] -- add your slider handling code here..
         //[/UserSliderCode_attacktime2]
     }
     else if (sliderThatWasMoved == attacklevel2)
     {
+        //   getProcessor()->setEnv2AttackLevel(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env2AL, newVal);
+
         //[UserSliderCode_attacklevel2] -- add your slider handling code here..
         //[/UserSliderCode_attacklevel2]
     }
     else if (sliderThatWasMoved == decaytime2)
     {
+        //getProcessor()->setEnv2DecayTime(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env2DT, newVal);
+
         //[UserSliderCode_decaytime2] -- add your slider handling code here..
         //[/UserSliderCode_decaytime2]
     }
     else if (sliderThatWasMoved == sustainlevel2)
     {
+        //getProcessor()->setEnv2SustainLevel(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env2SL, newVal);
+
         //[UserSliderCode_sustainlevel2] -- add your slider handling code here..
         //[/UserSliderCode_sustainlevel2]
     }
     else if (sliderThatWasMoved == releasetime2)
     {
+        //getProcessor()->setEnv2ReleaseTime(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->env2RT, newVal);
+
         //[UserSliderCode_releasetime2] -- add your slider handling code here..
         //[/UserSliderCode_releasetime2]
     }
     else if (sliderThatWasMoved == filteramp1)
     {
+        //getProcessor()->setLowPassAmp(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->filterAmp, newVal);
+
         //[UserSliderCode_filteramp1] -- add your slider handling code here..
         //[/UserSliderCode_filteramp1]
     }
     else if (sliderThatWasMoved == filterfreq1)
     {
+        //getProcessor()->setLowPassFreq(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->filterFreq, newVal);
+
         //[UserSliderCode_filterfreq1] -- add your slider handling code here..
         //[/UserSliderCode_filterfreq1]
     }
     else if (sliderThatWasMoved == filterreso1)
     {
+        getProcessor()->setLowPassReso(newVal);
+        getProcessor()->setParameterNotifyingHost(getProcessor()->filterReso, newVal);
+
         //[UserSliderCode_filterreso1] -- add your slider handling code here..
         //[/UserSliderCode_filterreso1]
     }
@@ -737,6 +801,10 @@ void Csc344finalAudioProcessorEditor::comboBoxChanged (ComboBox* comboBoxThatHas
 
     //[UsercomboBoxChanged_Post]
     //[/UsercomboBoxChanged_Post]
+}
+
+Csc344finalAudioProcessor *Csc344finalAudioProcessorEditor::getProcessor() {
+    return proc;
 }
 
 
