@@ -38,23 +38,26 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     freq1->setSliderStyle (Slider::Rotary);
     freq1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     freq1->addListener (this);
-    freq1->setSkewFactor (.5);
+    freq1->setSkewFactor (.3);
+    freq1->setValue(440);
     
     addAndMakeVisible (amp1 = new Slider ("Amplitude1"));
     amp1->setRange (0, 1, 0.01);
     amp1->setSliderStyle (Slider::Rotary);
     amp1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     amp1->addListener (this);
+    amp1->setValue(.5);
     
     addAndMakeVisible (freqmod1 = new ComboBox ("FreqMod1"));
     freqmod1->setEditableText (false);
     freqmod1->setJustificationType (Justification::centredLeft);
     freqmod1->setTextWhenNothingSelected (TRANS("Select Modifier:"));
     freqmod1->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    freqmod1->addItem (TRANS("LFO1"), 1);
-    freqmod1->addItem (TRANS("LFO2"), 2);
-    freqmod1->addItem (TRANS("Envelope1"), 3);
-    freqmod1->addItem (TRANS("Envelope2"), 4);
+    freqmod1->addItem (TRANS("LFO 1"), 1);
+    freqmod1->addItem (TRANS("LFO 2"), 2);
+    freqmod1->addItem (TRANS("Envelope 1"), 3);
+    freqmod1->addItem (TRANS("Envelope 2"), 4);
+    freqmod1->addItem (TRANS("None"), 5);
     freqmod1->addListener (this);
     
     addAndMakeVisible (ampmod1 = new ComboBox ("AmpMod1"));
@@ -66,6 +69,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     ampmod1->addItem (TRANS("LFO2"), 2);
     ampmod1->addItem (TRANS("Envelope1"), 3);
     ampmod1->addItem (TRANS("Envelope2"), 4);
+    ampmod1->addItem (TRANS("None"), 5);
     ampmod1->addListener (this);
     
     addAndMakeVisible (freq2 = new Slider ("Frequency1"));
@@ -74,13 +78,15 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     freq2->setSliderStyle (Slider::Rotary);
     freq2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     freq2->addListener (this);
-    freq2->setSkewFactor (.5);
+    freq2->setSkewFactor (.3);
+    freq2->setValue(440);
     
     addAndMakeVisible (amp2 = new Slider ("Amplitude1"));
     amp2->setRange (0, 1, 0.01);
     amp2->setSliderStyle (Slider::Rotary);
     amp2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     amp2->addListener (this);
+    amp2->setValue(0);
     
     addAndMakeVisible (freqmod2 = new ComboBox ("FreqMod2"));
     freqmod2->setEditableText (false);
@@ -91,6 +97,7 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     freqmod2->addItem (TRANS("LFO2"), 2);
     freqmod2->addItem (TRANS("Envelope1"), 3);
     freqmod2->addItem (TRANS("Envelope2"), 4);
+    freqmod2->addItem (TRANS("None"), 5);
     freqmod2->addListener (this);
     
     addAndMakeVisible (ampmod2 = new ComboBox ("AmpMod2"));
@@ -102,6 +109,8 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     ampmod2->addItem (TRANS("LFO2"), 2);
     ampmod2->addItem (TRANS("Envelope1"), 3);
     ampmod2->addItem (TRANS("Envelope2"), 4);
+    ampmod2->addItem (TRANS("None"), 5);
+
     ampmod2->addListener (this);
     
     addAndMakeVisible (lfofreq1 = new Slider ("LFOFreq1"));
@@ -110,7 +119,6 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     lfofreq1->setSliderStyle (Slider::Rotary);
     lfofreq1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     lfofreq1->addListener (this);
-    lfofreq1->setSkewFactor (.5);
     
     addAndMakeVisible (lfoamp1 = new Slider ("LFOAmp1"));
     lfoamp1->setRange (0, 1, 0.01);
@@ -118,13 +126,12 @@ Csc344finalAudioProcessorEditor::Csc344finalAudioProcessorEditor (Csc344finalAud
     lfoamp1->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     lfoamp1->addListener (this);
     
-    addAndMakeVisible (lfofreq2 = new Slider ("LFOFreq1"));
-    lfofreq2->setTooltip (TRANS("Frequency1"));
+    addAndMakeVisible (lfofreq2 = new Slider ("LFOFreq2"));
+    lfofreq2->setTooltip (TRANS("Frequency2"));
     lfofreq2->setRange (0.1, 10, 0.1);
     lfofreq2->setSliderStyle (Slider::Rotary);
     lfofreq2->setTextBoxStyle (Slider::TextBoxLeft, false, 80, 20);
     lfofreq2->addListener (this);
-    lfofreq2->setSkewFactor (.5);
     
     addAndMakeVisible (lfoamp2 = new Slider ("LFOAmp2"));
     lfoamp2->setRange (0, 10, 0.1);
@@ -762,7 +769,7 @@ void Csc344finalAudioProcessorEditor::sliderValueChanged (Slider* sliderThatWasM
     }
     else if (sliderThatWasMoved == filterreso1)
     {
-        getProcessor()->setLowPassReso(newVal);
+        //getProcessor()->setLowPassReso(newVal);
         getProcessor()->setParameterNotifyingHost(getProcessor()->filterReso, newVal);
 
         //[UserSliderCode_filterreso1] -- add your slider handling code here..
@@ -775,32 +782,27 @@ void Csc344finalAudioProcessorEditor::sliderValueChanged (Slider* sliderThatWasM
 
 void Csc344finalAudioProcessorEditor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 {
-    //[UsercomboBoxChanged_Pre]
-    //[/UsercomboBoxChanged_Pre]
+    int index = comboBoxThatHasChanged->getSelectedItemIndex();
+    std::cout<<"Selected item index: "<<index<<std::endl;
 
     if (comboBoxThatHasChanged == freqmod1)
     {
-        //[UserComboBoxCode_freqmod1] -- add your combo box handling code here..
-        //[/UserComboBoxCode_freqmod1]
+        getProcessor()->setParameterNotifyingHost(getProcessor()->sinFreqMod, index);
     }
     else if (comboBoxThatHasChanged == ampmod1)
     {
-        //[UserComboBoxCode_ampmod1] -- add your combo box handling code here..
-        //[/UserComboBoxCode_ampmod1]
+        getProcessor()->setParameterNotifyingHost(getProcessor()->sinAmpMod, index);
     }
     else if (comboBoxThatHasChanged == freqmod2)
     {
-        //[UserComboBoxCode_freqmod2] -- add your combo box handling code here..
-        //[/UserComboBoxCode_freqmod2]
+        getProcessor()->setParameterNotifyingHost(getProcessor()->sawFreqMod, index);
+
     }
     else if (comboBoxThatHasChanged == ampmod2)
     {
-        //[UserComboBoxCode_ampmod2] -- add your combo box handling code here..
-        //[/UserComboBoxCode_ampmod2]
+        getProcessor()->setParameterNotifyingHost(getProcessor()->sawAmpMod, index);
     }
 
-    //[UsercomboBoxChanged_Post]
-    //[/UsercomboBoxChanged_Post]
 }
 
 Csc344finalAudioProcessor *Csc344finalAudioProcessorEditor::getProcessor() {

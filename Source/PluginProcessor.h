@@ -121,6 +121,14 @@ public:
     
     void setLowPassReso(double newVal);
     
+    void setSinFreqMod(double newVal);
+    
+    void setSinAmpMod(double newVal);
+    
+    void setSawFreqMod(double newVal);
+    
+    void setSawAmpMod(double newVal);
+    
     float getParameterDefaultValue(int index);
     
     enum Parameters

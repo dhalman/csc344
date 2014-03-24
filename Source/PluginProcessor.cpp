@@ -166,8 +166,9 @@ public:
         return true;
     }
     
+    double output;
 private:
-    double output, attackLevel, attackTime, decayTime, sustainLevel, releaseTime;
+    double  attackLevel, attackTime, decayTime, sustainLevel, releaseTime;
     double attackDelta, decayDelta, releaseDelta;
     int state;
     double sampleRate;
@@ -178,11 +179,11 @@ private:
 class SynthLfo : public ReferenceCountedObject {
 public:
     SynthLfo()
-    : angle (0.0),
-    angleDelta (0.0),
-    depth (0.0),
-    sampleRate (0),
-    output (0.0)
+    : output (0.0),
+      angle (0.0),
+      angleDelta (0.0),
+      depth (0.0),
+      sampleRate (0)
     {
         init = false;
     }
@@ -217,8 +218,10 @@ public:
         
         return output;
     }
+    
+    double output;
 private:
-    double angle, angleDelta, depth, sampleRate, output;
+    double angle, angleDelta, depth, sampleRate;
     bool init;
 };
 
@@ -226,22 +229,28 @@ private:
 class OscillatorVoice  : public SynthesiserVoice
 {
 public:
-    OscillatorVoice()
+    OscillatorVoice(SynthLfo *l1, SynthLfo *l2, SynthEnvelope *e1, SynthEnvelope *e2)
     : angleDelta (0.0)
     {
-        if (!env1) {
-            env1 = new SynthEnvelope();
-            env2 = new SynthEnvelope();
+        lfo1 = l1;
+        lfo2 = l2;
+        env1 = e1;
+        env2 = e2;
+        
+        if (env1) {
             env1->setSampleRate(getSampleRate());
             env2->setSampleRate(getSampleRate());
             
             // Init last (Requires sample rate and env times to be set).
             env1->initEnvelope();
             env2->initEnvelope();
-            
-            lfo1 = new SynthLfo();
+
             lfo1->setSampleRate(getSampleRate());
+            lfo2->setSampleRate(getSampleRate());
         }
+        
+        setFreqMod(NONE);
+        setAmpMod(NONE);
     }
     
     SynthEnvelope *env1 = nullptr;
@@ -263,41 +272,16 @@ public:
     void startNote (int midiNoteNumber, float velocity,
                     SynthesiserSound* /*sound*/, int /*currentPitchWheelPosition*/)
     {
-        currentAngle = currentAngle1 = currentAngle2;
-        level = .7;
+        currentAngle = 0;
         midiNumber = midiNoteNumber;
-        
-        lfo1->setAngle(0);
-        
-        // env is output envelope
-        env1->setOutput(0);
-        env1->setState(0);
-        env1->setReleaseTime(.2);
-        
-        // env2 fires release over and over for a "diving" effect
-        env2->setReleaseTime(2);
-        env2->setOutput(1);
-        env2->release();
-        
-        // Fundamental note
-        //oscillatorFreq = MidiMessage::getMidiNoteInHertz(midiNoteNumber);
         
         setFrequency(oscillatorFreq);
         setMode(mode);
-        
-        // LFO
-        baseLfoFreq = 8;
-        lfo1->setFrequency(baseLfoFreq);
-        lfo1->setDepth(1);
-        
-        std::cout << "MidiNote: " << midiNoteNumber << std::endl;
     }
     
     void stopNote (bool allowTailOff) {
-        env1->release();
-        if (!allowTailOff) {
-            env1->setOutput(0);
-        }
+            clearCurrentNote();
+            angleDelta = 0.0;
     }
     
     void pitchWheelMoved (int /*newValue*/)
@@ -320,17 +304,10 @@ public:
                
                 // Increment oscillators
                 stepModifiers();
-                
-                stepOscillator(env2, 0);
+                stepOscillator();
                 
                 ++startSample;
             }
-        }
-        
-        // Note is done playing when output is 0 and envelope is in release
-        if (env1->getState() == env1->ENV_RELEASE && env1->getOutput() <= 0) {
-            clearCurrentNote();
-            angleDelta = 0.0;
         }
     }
     
@@ -355,7 +332,7 @@ public:
             angleDelta = oscillatorFreq / getSampleRate() * 2.0 * double_Pi;
         } else if (newMode == SAW) {
             mode = SAW;
-            angleDelta = oscillatorFreq / getSampleRate();
+            angleDelta = 2 * level * oscillatorFreq / getSampleRate();
         } else {
             // Do nothing if mode not supported
         }
@@ -365,27 +342,27 @@ public:
         currentAngle = newAngle;
     }
     
-    void stepOscillator(SynthEnvelope *se=nullptr, double offset=0) {
+    void stepOscillator() {
         // Don't mess with base angleDelta
         double tmpDelta = angleDelta;
         
-        if (se != nullptr) {
+        if (freqMod != nullptr) {
             // Multiplying env output creates a linear pitch shift based on env shape
             // Max frequency is angleDelta * max env level
-            tmpDelta *= se->getOutput();
+            if (freqModIndex == LFO1 || freqModIndex == LFO2) {
+                // Add lfo offset
+                tmpDelta += *freqMod;
+            } else if (freqModIndex == ENV1 || freqModIndex == ENV2) {
+                // Multiply by env output
+                tmpDelta *= *freqMod;
+            }
         }
         
-        currentAngle += tmpDelta + offset;
+        currentAngle += tmpDelta;
         
         // Reset saw if in saw mode and period is up
         if (mode == SAW && currentAngle >= level) {
             currentAngle = level * -1;
-        }
-        
-        // Reset if no delta
-        if (tmpDelta == 0) {
-            // We're not oscillating, so remove DC offset
-            currentAngle = 0;
         }
     }
     
@@ -399,25 +376,65 @@ public:
     }
     
     double getOutput() {
-        return level * mode == SINE ? sin(currentAngle) : currentAngle;
+        double tmpLevel = level;
+
+        if (ampMod != nullptr) {
+            tmpLevel *= *ampMod;
+        }
+        
+        return tmpLevel * (mode == SINE ? sin(currentAngle) : currentAngle);
     }
     
-private:
+    void setFreqMod(int index) {
+        freqModIndex = index;
+        std::cout<<"Freq mod index: "<<index<<std::endl;
+
+        if (index == 0) {
+            freqMod = &lfo1->output;
+        } else if (index == 1) {
+            freqMod = &lfo2->output;
+        } else if (index == 2) {
+            freqMod = &env1->output;
+        } else if (index == 3) {
+            freqMod = &env2->output;
+        } else {
+            freqMod = nullptr;
+        }
+    }
+    
+    void setAmpMod(int index) {
+        ampModIndex = index;
+        std::cout<<"Amp mod index: "<<index<<std::endl;
+        if (index == 0) {
+            ampMod = &lfo1->output;
+        } else if (index == 1) {
+            ampMod = &lfo2->output;
+        } else if (index == 2) {
+            ampMod = &env1->output;
+        } else if (index == 3) {
+            ampMod = &env2->output;
+        } else {
+            ampMod = nullptr;
+        }
+    }
+    
     enum {
         SINE, SAW
     };
     
+    
+    enum {
+        LFO1, LFO2, ENV1, ENV2, NONE
+    };
+private:
     double currentAngle, angleDelta, level;
-    double currentAngle1, angleDelta1;
-    double currentAngle2, angleDelta2;
-    double baseLfoFreq;
     double oscillatorFreq;
     int midiNumber;
     int mode = SINE;
+    int freqModIndex, ampModIndex;
+    double *freqMod = nullptr, *ampMod = nullptr;
 };
 
-const float defaultGain = 1.0f;
-const float defaultDelay = 0.5f;
 OscillatorVoice *sinVoice, *sawVoice;
 SynthLfo *lfo1, *lfo2;
 SynthEnvelope *env1, *env2;
@@ -426,24 +443,19 @@ SynthEnvelope *env1, *env2;
 //==============================================================================
 Csc344finalAudioProcessor::Csc344finalAudioProcessor()
 {
-    sinVoice = new OscillatorVoice();
-    sawVoice = new OscillatorVoice();
-    
+    env1 = new SynthEnvelope();
+    env2 = new SynthEnvelope();
     lfo1 = new SynthLfo();
     lfo2 = new SynthLfo();
     
-    env1 = new SynthEnvelope();
-    env2 = new SynthEnvelope();
+    sinVoice = new OscillatorVoice(lfo1, lfo2, env1, env2);
+    sawVoice = new OscillatorVoice(lfo1, lfo2, env1, env2);
     
-    lfo1->setSampleRate(getSampleRate());
-    lfo2->setSampleRate(getSampleRate());
-    env1->setSampleRate(getSampleRate());
-    env2->setSampleRate(getSampleRate());
-    env1->initEnvelope();
-    env2->initEnvelope();
+    sinVoice->setAmplitude(.5);
+    sawVoice->setAmplitude(0);
     
-    ((OscillatorVoice*)sinVoice)->setMode(0);
-    ((OscillatorVoice*)sawVoice)->setMode(1);
+    sinVoice->setMode(sinVoice->SINE);
+    sawVoice->setMode(sawVoice->SAW);
     
     sinSynth.addVoice(sinVoice);
     sawSynth.addVoice(sawVoice);
@@ -526,15 +538,19 @@ void Csc344finalAudioProcessor::setParameter (int index, float newValue)
 
             break;
         case sinFreqMod:
-
+            setSinFreqMod(newValue);
+            
             break;
         case sinAmpMod:
+            setSinAmpMod(newValue);
             
             break;
         case sawFreqMod:
+            setSawFreqMod(newValue);
             
             break;
         case sawAmpMod:
+            setSawAmpMod(newValue);
             
             break;
         case lfo1Freq:
@@ -893,4 +909,17 @@ void Csc344finalAudioProcessor::setLowPassFreq(double newVal){
 void Csc344finalAudioProcessor::setLowPassReso(double newVal){
     std::cout<<"test"<<std::endl;
 }
+void Csc344finalAudioProcessor::setSinFreqMod(double newVal){
+    sinVoice->setFreqMod(newVal);
+}
+void Csc344finalAudioProcessor::setSinAmpMod(double newVal){
+    sinVoice->setAmpMod(newVal);
+}
+void Csc344finalAudioProcessor::setSawFreqMod(double newVal){
+    sawVoice->setFreqMod(newVal);
+}
+void Csc344finalAudioProcessor::setSawAmpMod(double newVal){
+    sawVoice->setAmpMod(newVal);
+}
+
 
